@@ -1,6 +1,7 @@
-package main
+package examples
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
@@ -26,7 +27,8 @@ func makeFile(img image.Image, filename string) {
 	}
 }
 
-func blackImage() {
+// Creates an all-black png image with the size W*H in the examples/pictures directory.
+func BlackImage() {
 	var img = image.NewGray(image.Rect(0, 0, W, H))
 	for i := 0; i < W; i++ {
 		for j := 0; j < H; j++ {
@@ -36,7 +38,8 @@ func blackImage() {
 	makeFile(img, "pictures/black_image.png")
 }
 
-func whiteImage() {
+// Creates an all-white png image with the size W*H in the examples/pictures directory.
+func WhiteImage() {
 	var img = image.NewGray(image.Rect(0, 0, W, H))
 	for i := 0; i < W; i++ {
 		for j := 0; j < H; j++ {
@@ -46,7 +49,8 @@ func whiteImage() {
 	makeFile(img, "pictures/white_image.png")
 }
 
-func redImage() {
+// Creates an all-red png image with the size W*H in the examples/pictures directory.
+func RedImage() {
 	var img = image.NewRGBA(image.Rect(0, 0, W, H))
 	for i := 0; i < W; i++ {
 		for j := 0; j < H; j++ {
@@ -56,7 +60,8 @@ func redImage() {
 	makeFile(img, "pictures/red_image.png")
 }
 
-func gradientImage() {
+// Creates a gradient png image with the size W*H in the examples/pictures directory.
+func GradientImage() {
 	var img = image.NewGray(image.Rect(0, 0, W, H))
 	for i := 0; i < W; i++ {
 		for j := 0; j < H; j++ {
@@ -66,9 +71,30 @@ func gradientImage() {
 	makeFile(img, "pictures/gradient_image.png")
 }
 
-func main() {
-	blackImage()
-	whiteImage()
-	redImage()
-	gradientImage()
+// Example of creating a black image
+func ExampleBlackImage() {
+	BlackImage()
+	fmt.Println("Ok")
+	// Output: Ok
+}
+
+// Example of creating a white image
+func ExampleWhiteImage() {
+	WhiteImage()
+	fmt.Println("Ok")
+	// Output: Ok
+}
+
+// Example of creating a red image
+func ExampleRedImage() {
+	RedImage()
+	fmt.Println("Ok")
+	// Output: Ok
+}
+
+// Example of creating a gradient image
+func ExampleGradientImage() {
+	GradientImage()
+	fmt.Println("Ok")
+	// Output: Ok
 }
