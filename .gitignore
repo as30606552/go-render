@@ -2,4 +2,4 @@
 .idea
 
 # try to generate images by running the code yourself
-pictures
+examples/pictures
