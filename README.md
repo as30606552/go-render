@@ -8,7 +8,7 @@ Use cases are located in the directory 'examples'.
 To run all the examples, follow these steps:
 1. [Download](https://golang.org/dl/) and install the go compiler.
 2. Create a directory 'pictures' in the directory 'examples' so that the examples can store the generated images in it.
-3. Run the `go test` command in the directory examples.
+3. Run the `go test` command in the directory 'examples'.
 
 ### Created with
 
