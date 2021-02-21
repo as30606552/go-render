@@ -75,11 +75,11 @@ const bufsize uint8 = 255
 // Allows you to sequentially call the Next method to get tokens from a io.Reader that can occur in obj files.
 type Scanner struct {
 	reader io.Reader // The io.Reader from which the tokens will be read.
+	init   bool      // Contains true if there has already been an attempt to extract a byte from the buffer.
 
 	buffer  [bufsize]byte // Temporary storage for bytes extracted from the reader but not yet processed.
 	bufpos  uint8         // The position of the currently processed byte in the buffer.
 	buflast uint8         // The number of bytes contained in the buffer.
-	init    bool          // Contains true if there has already been an attempt to extract a byte from the buffer.
 
 	lineStr  []byte    // Current processed line string.
 	line     int       // The number of the currently processed line.
@@ -178,7 +178,7 @@ func (scanner *Scanner) refreshBuffer() {
 }
 
 // Moving the scanner to the next line.
-func (scanner Scanner) refreshLine() {
+func (scanner *Scanner) refreshLine() {
 	scanner.lineStr = make([]byte, 0, 100)
 	scanner.line++
 	scanner.column = 0
@@ -260,6 +260,7 @@ func (scanner *Scanner) Next() (TokenType, string) {
 		scanner.step()
 	}
 	// All bytes are read from the reader.
+	state = scanner.state
 	scanner.state = start
 	return getTokenType(state), string(buffer)
 }
