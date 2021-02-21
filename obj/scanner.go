@@ -1,4 +1,4 @@
-package tokenizer
+package obj
 
 import (
 	"errors"
@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-// Is one of the possible values that the Tokenizer.Next method returns.
+// Is one of the possible values that the Scanner.Next method returns.
 type TokenType uint8
 
 const (
@@ -23,7 +23,7 @@ const (
 )
 
 // Is one of the possible states of a finite state machine.
-// See https://github.com/as30606552/ComputerGraphicsProject/wiki/Tokenizer.
+// See https://github.com/as30606552/ComputerGraphicsProject/wiki/Scanner.
 type stateType uint8
 
 const (
@@ -56,7 +56,7 @@ const (
 )
 
 // The finite state machine table.
-// See https://github.com/as30606552/ComputerGraphicsProject/wiki/Tokenizer.
+// See https://github.com/as30606552/ComputerGraphicsProject/wiki/Scanner.
 var matrix = [9][11]stateType{
 	{foundEol, start, start, start, start, start, start, start, start, start, start},
 	{foundSpace, skipLine, start, foundSpace, start, start, start, start, start, start, start},
@@ -69,11 +69,11 @@ var matrix = [9][11]stateType{
 	{unknown, skipLine, start, start, start, unknown, unknown, unknown, unknown, unknown, unknown},
 }
 
-// The size of the buffer in which the Tokenizer stores the read characters.
+// The size of the buffer in which the Scanner stores the read characters.
 const bufsize uint8 = 255
 
 // Allows you to sequentially call the Next method to get tokens from a io.Reader that can occur in obj files.
-type Tokenizer struct {
+type Scanner struct {
 	reader io.Reader // The io.Reader from which the tokens will be read.
 
 	buffer  [bufsize]byte // Temporary storage for bytes extracted from the reader but not yet processed.
@@ -84,16 +84,16 @@ type Tokenizer struct {
 	line     int       // The number of the currently processed line.
 	column   int       // The position of the currently processed character in the line.
 	position int       // The position of the currently processed character relative to the beginning of the byte sequence.
-	state    stateType // The current state of the Tokenizer.
+	state    stateType // The current state of the Scanner.
 
 	Error        func(error) // The function called in case of an error.
 	SkipComments bool        // true if comments should be skipped.
 }
 
-// Creates a new Tokenizer that reads from the reader.
+// Creates a new Scanner that reads from the reader.
 // Sets skipping comments by default.
-func NewTokenizer(reader io.Reader) *Tokenizer {
-	return &Tokenizer{reader: reader, SkipComments: true}
+func NewScanner(reader io.Reader) *Scanner {
+	return &Scanner{reader: reader, SkipComments: true}
 }
 
 // Calculates the character type.
@@ -126,7 +126,7 @@ func getSymbolType(symbol byte) symbolType {
 }
 
 // Converts the state of the finite state machine from which it moved to the initial state to the type of the read token.
-// See https://github.com/as30606552/ComputerGraphicsProject/wiki/Tokenizer.
+// See https://github.com/as30606552/ComputerGraphicsProject/wiki/Scanner.
 func getTokenType(state stateType) TokenType {
 	// Impossible situation.
 	if state == start {
@@ -153,12 +153,12 @@ func getTokenType(state stateType) TokenType {
 
 // Delegates the execution of the Error function.
 // If the function is not specified, by default it outputs the error data to os.Stderr.
-func (tokenizer *Tokenizer) error(err error) {
-	if tokenizer.Error != nil {
-		tokenizer.Error(err)
+func (scanner *Scanner) error(err error) {
+	if scanner.Error != nil {
+		scanner.Error(err)
 		return
 	}
-	_, err = fmt.Fprintf(os.Stderr, "Error in position %d: %s\n", tokenizer.position, err.Error())
+	_, err = fmt.Fprintf(os.Stderr, "Error in position %d: %s\n", scanner.position, err.Error())
 	if err != nil {
 		panic(err)
 	}
@@ -167,42 +167,42 @@ func (tokenizer *Tokenizer) error(err error) {
 // Reads new values to the buffer.
 // The number of bytes read is stored in the buflast field.
 // The current buffer position is reset to 0.
-func (tokenizer Tokenizer) refreshBuffer() {
-	var n, err = tokenizer.reader.Read(tokenizer.buffer[:])
+func (scanner Scanner) refreshBuffer() {
+	var n, err = scanner.reader.Read(scanner.buffer[:])
 	if err != nil && err != io.EOF {
-		tokenizer.error(err)
+		scanner.error(err)
 	}
-	tokenizer.buflast = uint8(n)
-	tokenizer.bufpos = 0
+	scanner.buflast = uint8(n)
+	scanner.bufpos = 0
 }
 
 // Returns true if there is a next token.
-func (tokenizer *Tokenizer) has() bool {
+func (scanner *Scanner) has() bool {
 	// Initialization of the buffer, if it was not initialized earlier.
-	if !tokenizer.init {
-		tokenizer.refreshBuffer()
-		tokenizer.init = true
-		return tokenizer.bufpos != tokenizer.buflast
+	if !scanner.init {
+		scanner.refreshBuffer()
+		scanner.init = true
+		return scanner.bufpos != scanner.buflast
 	}
 	// The buffer is processed to the end.
 	// It is necessary to read the new data to the buffer.
-	if tokenizer.bufpos == tokenizer.buflast {
+	if scanner.bufpos == scanner.buflast {
 		// If the number of elements in the buffer is less than the buffer size,
 		// it means that the buffer was not fully filled the previous time when reading it.
-		if tokenizer.buflast < bufsize {
+		if scanner.buflast < bufsize {
 			return false
 		} else {
-			tokenizer.refreshBuffer()
+			scanner.refreshBuffer()
 		}
 	}
-	return tokenizer.bufpos != tokenizer.buflast
+	return scanner.bufpos != scanner.buflast
 }
 
 // Returns the next character from the reader.
 // Panics if it can't get the next character, because this method is only used if the next character is present.
-func (tokenizer *Tokenizer) get() byte {
-	if tokenizer.has() {
-		return tokenizer.buffer[tokenizer.bufpos]
+func (scanner *Scanner) get() byte {
+	if scanner.has() {
+		return scanner.buffer[scanner.bufpos]
 	}
 	// Impossible situation.
 	panic(errors.New("can not get the next byte"))
@@ -211,67 +211,67 @@ func (tokenizer *Tokenizer) get() byte {
 // Moves to the next character.
 // Calls the get method without checking the existence of the next character,
 // so it must only be called if the next character exists.
-func (tokenizer *Tokenizer) step() {
-	if tokenizer.get() == '\n' {
-		tokenizer.line++
-		tokenizer.column = 0
+func (scanner *Scanner) step() {
+	if scanner.get() == '\n' {
+		scanner.line++
+		scanner.column = 0
 	} else {
-		tokenizer.column++
+		scanner.column++
 	}
-	tokenizer.bufpos++
-	tokenizer.position++
+	scanner.bufpos++
+	scanner.position++
 }
 
 // Returns the next token read from the reader.
 // If all bytes are read from the reader before calling the method, the EOF is always returned.
-func (tokenizer *Tokenizer) Next() (TokenType, string) {
-	// If all bytes are read from the reader, the Tokenizer always returns the EOF.
-	if !tokenizer.has() {
+func (scanner *Scanner) Next() (TokenType, string) {
+	// If all bytes are read from the reader, the Scanner always returns the EOF.
+	if !scanner.has() {
 		return EOF, ""
 	}
-	var state stateType // Contains the previous state of the Tokenizer, which can be used to determine the type of token.
+	var state stateType // Contains the previous state of the Scanner, which can be used to determine the type of token.
 	var symbol byte     // Contains the character currently being processed.
 	var tokenType TokenType
 	var buffer = make([]byte, 0, 100) // Contains the characters that were read.
-	for tokenizer.has() {
-		symbol = tokenizer.get()
-		state = tokenizer.state
-		tokenizer.state = matrix[getSymbolType(symbol)][tokenizer.state] // The next state is contained in the matrix.
+	for scanner.has() {
+		symbol = scanner.get()
+		state = scanner.state
+		scanner.state = matrix[getSymbolType(symbol)][scanner.state] // The next state is contained in the matrix.
 		// The transition to the start state means the end of the token.
-		if tokenizer.state == start {
+		if scanner.state == start {
 			tokenType = getTokenType(state)
 			// If the comments are omitted, the next token must be returned.
-			if tokenizer.SkipComments && tokenType == COMMENT {
-				return tokenizer.Next()
+			if scanner.SkipComments && tokenType == COMMENT {
+				return scanner.Next()
 			}
 			return tokenType, string(buffer)
 		}
 		buffer = append(buffer, symbol)
-		tokenizer.step()
+		scanner.step()
 	}
 	// All bytes are read from the reader.
-	tokenizer.state = start
+	scanner.state = start
 	return getTokenType(state), string(buffer)
 }
 
 // Skips all characters until the beginning of the next line.
-func (tokenizer *Tokenizer) SkipLine() {
-	tokenizer.state = skipLine
-	_, _ = tokenizer.Next()
+func (scanner *Scanner) SkipLine() {
+	scanner.state = skipLine
+	_, _ = scanner.Next()
 }
 
-// Returns the position of the character currently being processed by the Tokenizer
+// Returns the position of the character currently being processed by the Scanner
 // relative to the beginning of the sequence of bytes being read.
-func (tokenizer *Tokenizer) Position() int {
-	return tokenizer.position
+func (scanner *Scanner) Position() int {
+	return scanner.position
 }
 
-// Returns the number of the line currently being processed by the Tokenizer.
-func (tokenizer *Tokenizer) Line() int {
-	return tokenizer.line
+// Returns the number of the line currently being processed by the Scanner.
+func (scanner *Scanner) Line() int {
+	return scanner.line
 }
 
-// Returns the position in the line currently being processed by the Tokenizer.
-func (tokenizer *Tokenizer) Column() int {
-	return tokenizer.column
+// Returns the position in the line currently being processed by the Scanner.
+func (scanner *Scanner) Column() int {
+	return scanner.column
 }
