@@ -81,6 +81,7 @@ type Scanner struct {
 	buflast uint8         // The number of bytes contained in the buffer.
 	init    bool          // Contains true if there has already been an attempt to extract a byte from the buffer.
 
+	lineStr  []byte    // Current processed line string.
 	line     int       // The number of the currently processed line.
 	column   int       // The position of the currently processed character in the line.
 	position int       // The position of the currently processed character relative to the beginning of the byte sequence.
@@ -176,14 +177,15 @@ func (scanner *Scanner) refreshBuffer() {
 	scanner.bufpos = 0
 }
 
+// Moving the scanner to the next line.
+func (scanner Scanner) refreshLine() {
+	scanner.lineStr = make([]byte, 0, 100)
+	scanner.line++
+	scanner.column = 0
+}
+
 // Returns true if there is a next token.
 func (scanner *Scanner) has() bool {
-	// Initialization of the buffer, if it was not initialized earlier.
-	if !scanner.init {
-		scanner.refreshBuffer()
-		scanner.init = true
-		return scanner.bufpos != scanner.buflast
-	}
 	// The buffer is processed to the end.
 	// It is necessary to read the new data to the buffer.
 	if scanner.bufpos == scanner.buflast {
@@ -212,10 +214,11 @@ func (scanner *Scanner) get() byte {
 // Calls the get method without checking the existence of the next character,
 // so it must only be called if the next character exists.
 func (scanner *Scanner) step() {
-	if scanner.get() == '\n' {
-		scanner.line++
-		scanner.column = 0
+	var symbol = scanner.get()
+	if symbol == '\n' {
+		scanner.refreshLine()
 	} else {
+		scanner.lineStr = append(scanner.lineStr, symbol)
 		scanner.column++
 	}
 	scanner.bufpos++
@@ -225,6 +228,13 @@ func (scanner *Scanner) step() {
 // Returns the next token read from the reader.
 // If all bytes are read from the reader before calling the method, the EOF is always returned.
 func (scanner *Scanner) Next() (TokenType, string) {
+	// Initialization of the scanner, if it was not initialized earlier.
+	if !scanner.init {
+		scanner.refreshBuffer()
+		scanner.refreshLine()
+		scanner.line = 0
+		scanner.init = true
+	}
 	// If all bytes are read from the reader, the Scanner always returns the EOF.
 	if !scanner.has() {
 		return EOF, ""
@@ -269,6 +279,11 @@ func (scanner *Scanner) Position() int {
 // Returns the number of the line currently being processed by the Scanner.
 func (scanner *Scanner) Line() int {
 	return scanner.line
+}
+
+// Returns the part of the string that was read during the processing of the string.
+func (scanner Scanner) LineStr() string {
+	return string(scanner.lineStr)
 }
 
 // Returns the position in the line currently being processed by the Scanner.
