@@ -167,7 +167,7 @@ func (scanner *Scanner) error(err error) {
 // Reads new values to the buffer.
 // The number of bytes read is stored in the buflast field.
 // The current buffer position is reset to 0.
-func (scanner Scanner) refreshBuffer() {
+func (scanner *Scanner) refreshBuffer() {
 	var n, err = scanner.reader.Read(scanner.buffer[:])
 	if err != nil && err != io.EOF {
 		scanner.error(err)
