@@ -113,7 +113,7 @@ var matrix = [9][11]stateType{
 // The size of the buffer in which the Scanner stores the read characters.
 const bufsize uint8 = 255
 
-// Allows you to sequentially call the Next method to get tokens from a io.Reader that can occur in obj files.
+// Allows you to sequentially call the Next method to get tokens from a io.Reader that can occur in .obj files.
 type Scanner struct {
 	reader io.Reader // The io.Reader from which the tokens will be read.
 	init   bool      // Contains true if there has already been an attempt to extract a byte from the buffer.
@@ -208,7 +208,7 @@ func (scanner *Scanner) step() {
 }
 
 // Returns the next token read from the reader.
-// If all bytes are read from the reader before calling the method, the EOF is always returned.
+// If all bytes are read from the reader before calling the method, the (EOF, "") is always returned.
 func (scanner *Scanner) Next() (TokenType, string) {
 	// Initialization of the scanner, if it was not initialized earlier.
 	if !scanner.init {
@@ -217,7 +217,7 @@ func (scanner *Scanner) Next() (TokenType, string) {
 		scanner.line = 0
 		scanner.init = true
 	}
-	// If all bytes are read from the reader, the Scanner always returns the EOF.
+	// If all bytes are read from the reader, the Scanner always returns the (EOF, "").
 	if !scanner.has() {
 		return EOF, ""
 	}
