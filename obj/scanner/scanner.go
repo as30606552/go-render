@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-// Is one of the possible values that the Scanner.Next method returns.
+// One of the possible values that the Scanner.Next method returns.
 type TokenType uint8
 
 const (
@@ -34,7 +34,7 @@ func (tokenType TokenType) Name() string {
 	return tokenTypeNamesMap[tokenType]
 }
 
-// Is one of the possible states of a finite state machine.
+// One of the possible states of a finite state machine.
 // See https://github.com/as30606552/ComputerGraphicsProject/wiki/Scanner.
 type stateType uint8
 
@@ -52,7 +52,7 @@ const (
 	unknown    stateType = iota // An unknown sequence of characters was found.
 )
 
-// Is one of the possible character types that can be contained in a sequence of bytes to be read.
+// One of the possible character types that can be contained in a sequence of bytes to be read.
 type symbolType uint8
 
 const (
@@ -96,7 +96,7 @@ func getSymbolType(symbol byte) symbolType {
 	return other
 }
 
-// The finite state machine table.
+// The finite state machine matrix.
 // See https://github.com/as30606552/ComputerGraphicsProject/wiki/Scanner.
 var matrix = [9][11]stateType{
 	{foundEol, start, start, start, start, start, start, start, start, start, start},
