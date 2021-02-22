@@ -1,4 +1,4 @@
-package obj
+package scanner
 
 import (
 	"errors"
@@ -21,6 +21,18 @@ const (
 	UNKNOWN TokenType = iota // Unknown type of token.
 	COMMENT TokenType = iota // Starts with the '#' character and ends with the character before the end of the line.
 )
+
+// Converts the state of the finite state machine from which it moved to the initial state to the type of the read token.
+// See https://github.com/as30606552/ComputerGraphicsProject/wiki/Scanner.
+var tokenTypeMap = [...]TokenType{UNKNOWN, COMMENT, EOL, SPACE, SLASH, UNKNOWN, UNKNOWN, INT, FLOAT, WORD, UNKNOWN}
+
+// Converts a token type constant to its string representation.
+var tokenTypeNamesMap = [...]string{"WORD", "INT", "FLOAT", "SLASH", "SPACE", "EOL", "EOF", "UNKNOWN", "COMMENT"}
+
+// Converts a token type constant to its string representation.
+func (tokenType TokenType) Name() string {
+	return tokenTypeNamesMap[tokenType]
+}
 
 // Is one of the possible states of a finite state machine.
 // See https://github.com/as30606552/ComputerGraphicsProject/wiki/Scanner.
@@ -55,48 +67,6 @@ const (
 	other  symbolType = iota // Any other character.
 )
 
-// The finite state machine table.
-// See https://github.com/as30606552/ComputerGraphicsProject/wiki/Scanner.
-var matrix = [9][11]stateType{
-	{foundEol, start, start, start, start, start, start, start, start, start, start},
-	{foundSpace, skipLine, start, foundSpace, start, start, start, start, start, start, start},
-	{skipLine, skipLine, start, start, start, start, start, start, start, start, start},
-	{foundSlash, skipLine, start, start, start, start, start, start, start, start, start},
-	{foundMinus, skipLine, start, start, start, unknown, unknown, unknown, unknown, unknown, unknown},
-	{unknown, skipLine, start, start, start, unknown, unknown, foundDot, unknown, unknown, unknown},
-	{foundInt, skipLine, start, start, start, foundInt, foundFloat, foundInt, foundFloat, foundWord, unknown},
-	{foundWord, skipLine, start, start, start, unknown, unknown, unknown, unknown, foundWord, unknown},
-	{unknown, skipLine, start, start, start, unknown, unknown, unknown, unknown, unknown, unknown},
-}
-
-// The size of the buffer in which the Scanner stores the read characters.
-const bufsize uint8 = 255
-
-// Allows you to sequentially call the Next method to get tokens from a io.Reader that can occur in obj files.
-type Scanner struct {
-	reader io.Reader // The io.Reader from which the tokens will be read.
-	init   bool      // Contains true if there has already been an attempt to extract a byte from the buffer.
-
-	buffer  [bufsize]byte // Temporary storage for bytes extracted from the reader but not yet processed.
-	bufpos  uint8         // The position of the currently processed byte in the buffer.
-	buflast uint8         // The number of bytes contained in the buffer.
-
-	lineStr  []byte    // Current processed line string.
-	line     int       // The number of the currently processed line.
-	column   int       // The position of the currently processed character in the line.
-	position int       // The position of the currently processed character relative to the beginning of the byte sequence.
-	state    stateType // The current state of the Scanner.
-
-	Error        func(error) // The function called in case of an error.
-	SkipComments bool        // true if comments should be skipped.
-}
-
-// Creates a new Scanner that reads from the reader.
-// Sets skipping comments by default.
-func NewScanner(reader io.Reader) *Scanner {
-	return &Scanner{reader: reader, SkipComments: true}
-}
-
 // Calculates the character type.
 func getSymbolType(symbol byte) symbolType {
 	switch symbol {
@@ -126,30 +96,44 @@ func getSymbolType(symbol byte) symbolType {
 	return other
 }
 
-// Converts the state of the finite state machine from which it moved to the initial state to the type of the read token.
+// The finite state machine table.
 // See https://github.com/as30606552/ComputerGraphicsProject/wiki/Scanner.
-func getTokenType(state stateType) TokenType {
-	// Impossible situation.
-	if state == start {
-		panic(errors.New("it is not possible to get the token type from the start state"))
-	}
-	switch state {
-	case foundEol:
-		return EOL
-	case foundSpace:
-		return SPACE
-	case foundSlash:
-		return SLASH
-	case foundInt:
-		return INT
-	case foundFloat:
-		return FLOAT
-	case foundWord:
-		return WORD
-	case skipLine:
-		return COMMENT
-	}
-	return UNKNOWN
+var matrix = [9][11]stateType{
+	{foundEol, start, start, start, start, start, start, start, start, start, start},
+	{foundSpace, skipLine, start, foundSpace, start, start, start, start, start, start, start},
+	{skipLine, skipLine, start, start, start, start, start, start, start, start, start},
+	{foundSlash, skipLine, start, start, start, start, start, start, start, start, start},
+	{foundMinus, skipLine, start, start, start, unknown, unknown, unknown, unknown, unknown, unknown},
+	{unknown, skipLine, start, start, start, unknown, unknown, foundDot, unknown, unknown, unknown},
+	{foundInt, skipLine, start, start, start, foundInt, foundFloat, foundInt, foundFloat, foundWord, unknown},
+	{foundWord, skipLine, start, start, start, unknown, unknown, unknown, unknown, foundWord, unknown},
+	{unknown, skipLine, start, start, start, unknown, unknown, unknown, unknown, unknown, unknown},
+}
+
+// The size of the buffer in which the Scanner stores the read characters.
+const bufsize uint8 = 255
+
+// Allows you to sequentially call the Next method to get tokens from a io.Reader that can occur in obj files.
+type Scanner struct {
+	reader io.Reader // The io.Reader from which the tokens will be read.
+	init   bool      // Contains true if there has already been an attempt to extract a byte from the buffer.
+
+	buffer  [bufsize]byte // Temporary storage for bytes extracted from the reader but not yet processed.
+	bufpos  uint8         // The position of the currently processed byte in the buffer.
+	buflast uint8         // The number of bytes contained in the buffer.
+
+	lineStr  []byte // Current processed line string.
+	line     int    // The number of the currently processed line.
+	position int    // The position of the currently processed character relative to the beginning of the byte sequence.
+
+	Error        func(error) // The function called in case of an error.
+	SkipComments bool        // true if comments should be skipped.
+}
+
+// Creates a new Scanner that reads from the reader.
+// Sets skipping comments by default.
+func NewScanner(reader io.Reader) *Scanner {
+	return &Scanner{reader: reader, SkipComments: true}
 }
 
 // Delegates the execution of the Error function.
@@ -181,7 +165,6 @@ func (scanner *Scanner) refreshBuffer() {
 func (scanner *Scanner) refreshLine() {
 	scanner.lineStr = make([]byte, 0, 100)
 	scanner.line++
-	scanner.column = 0
 }
 
 // Returns true if there is a next token.
@@ -219,7 +202,6 @@ func (scanner *Scanner) step() {
 		scanner.refreshLine()
 	} else {
 		scanner.lineStr = append(scanner.lineStr, symbol)
-		scanner.column++
 	}
 	scanner.bufpos++
 	scanner.position++
@@ -239,17 +221,16 @@ func (scanner *Scanner) Next() (TokenType, string) {
 	if !scanner.has() {
 		return EOF, ""
 	}
-	var state stateType // Contains the previous state of the Scanner, which can be used to determine the type of token.
+	var state stateType // Contains the current state of finite state machine.
 	var symbol byte     // Contains the character currently being processed.
 	var tokenType TokenType
 	var buffer = make([]byte, 0, 100) // Contains the characters that were read.
 	for scanner.has() {
 		symbol = scanner.get()
-		state = scanner.state
-		scanner.state = matrix[getSymbolType(symbol)][scanner.state] // The next state is contained in the matrix.
+		tokenType = tokenTypeMap[state]
+		state = matrix[getSymbolType(symbol)][state] // The next state is contained in the matrix.
 		// The transition to the start state means the end of the token.
-		if scanner.state == start {
-			tokenType = getTokenType(state)
+		if state == start {
 			// If the comments are omitted, the next token must be returned.
 			if scanner.SkipComments && tokenType == COMMENT {
 				return scanner.Next()
@@ -260,9 +241,7 @@ func (scanner *Scanner) Next() (TokenType, string) {
 		scanner.step()
 	}
 	// All bytes are read from the reader.
-	state = scanner.state
-	scanner.state = start
-	return getTokenType(state), string(buffer)
+	return tokenTypeMap[state], string(buffer)
 }
 
 // Skips all characters until the beginning of the next line.
@@ -282,12 +261,7 @@ func (scanner *Scanner) Line() int {
 	return scanner.line
 }
 
-// Returns the part of the string that was read during the processing of the string.
-func (scanner Scanner) LineStr() string {
-	return string(scanner.lineStr)
-}
-
 // Returns the position in the line currently being processed by the Scanner.
 func (scanner *Scanner) Column() int {
-	return scanner.column
+	return len(scanner.lineStr)
 }
