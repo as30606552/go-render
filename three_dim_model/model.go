@@ -26,12 +26,12 @@ func NewModel() *Model {
 }
 
 // Adds a point to the model.
-func (model Model) AppendPoint(point Point) {
+func (model *Model) AppendPoint(point Point) {
 	model.points = append(model.points, point)
 }
 
 // Returns a point model for the index.
 // Be careful, the points are indexed from 0.
-func (model Model) GetPoint(index int) Point {
+func (model *Model) GetPoint(index int) Point {
 	return model.points[index]
 }
