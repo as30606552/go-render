@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"image/png"
 	"os"
+	"testing"
 )
 
 const (
@@ -70,6 +71,16 @@ func GradientImage() {
 		}
 	}
 	makeFile(img, "pictures/gradient_image.png")
+}
+
+func TestMain(m *testing.M) {
+	if _, err := os.Stat("pictures"); os.IsNotExist(err) {
+		err = os.Mkdir("pictures", os.ModePerm)
+		if err != nil {
+			panic(err)
+		}
+	}
+	m.Run()
 }
 
 // Example of creating a black image

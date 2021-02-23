@@ -11,26 +11,26 @@ import (
 type TokenType uint8
 
 const (
-	WORD    TokenType = iota // Can consist of letters, numbers, and underscores. Can not start with a number.
-	INT     TokenType = iota // Consists of numbers. Can start with a minus.
-	FLOAT   TokenType = iota // Consists of digits with a dot between them. Can start with a minus.
-	SLASH   TokenType = iota // '/' character.
-	SPACE   TokenType = iota // A sequence of spaces and/or tabs.
+	Word    TokenType = iota // Can consist of letters, numbers, and underscores. Can not start with a number.
+	Int     TokenType = iota // Consists of numbers. Can start with a minus.
+	Float   TokenType = iota // Consists of digits with a dot between them. Can start with a minus.
+	Slash   TokenType = iota // '/' character.
+	Space   TokenType = iota // A sequence of spaces and/or tabs.
 	EOL     TokenType = iota // '\n' character.
 	EOF     TokenType = iota // Indicates that the end of the sequence of bytes being read has been reached.
-	UNKNOWN TokenType = iota // Unknown type of token.
-	COMMENT TokenType = iota // Starts with the '#' character and ends with the character before the end of the line.
+	Unknown TokenType = iota // Unknown type of token.
+	Comment TokenType = iota // Starts with the '#' character and ends with the character before the end of the line.
 )
 
 // Converts the state of the finite state machine from which it moved to the initial state to the type of the read token.
 // See https://github.com/as30606552/ComputerGraphicsProject/wiki/Scanner.
-var tokenTypeMap = [...]TokenType{UNKNOWN, COMMENT, EOL, SPACE, SLASH, UNKNOWN, UNKNOWN, INT, FLOAT, WORD, UNKNOWN}
+var tokenTypeMap = [...]TokenType{Unknown, Comment, EOL, Space, Slash, Unknown, Unknown, Int, Float, Word, Unknown}
 
 // Converts a token type constant to its string representation.
 var tokenTypeNamesMap = [...]string{"WORD", "INT", "FLOAT", "SLASH", "SPACE", "EOL", "EOF", "UNKNOWN", "COMMENT"}
 
 // Converts a token type constant to its string representation.
-func (tokenType TokenType) Name() string {
+func (tokenType TokenType) String() string {
 	return tokenTypeNamesMap[tokenType]
 }
 
@@ -47,8 +47,8 @@ const (
 	foundMinus stateType = iota // '-' character was found at the beginning of the token, and a digit is expected.
 	foundDot   stateType = iota // A '.' character is found after an integer, a digit is expected.
 	foundInt   stateType = iota // '\n' character found.
-	foundFloat stateType = iota // A sequence of characters satisfying the FLOAT token is found, a digit is expected.
-	foundWord  stateType = iota // A sequence of characters satisfying the WORD token is found.
+	foundFloat stateType = iota // A sequence of characters satisfying the Float token is found, a digit is expected.
+	foundWord  stateType = iota // A sequence of characters satisfying the Word token is found.
 	unknown    stateType = iota // An unknown sequence of characters was found.
 )
 
@@ -221,10 +221,12 @@ func (scanner *Scanner) Next() (TokenType, string) {
 	if !scanner.has() {
 		return EOF, ""
 	}
-	var state stateType // Contains the current state of finite state machine.
-	var symbol byte     // Contains the character currently being processed.
-	var tokenType TokenType
-	var buffer = make([]byte, 0, 100) // Contains the characters that were read.
+	var (
+		state     stateType // Contains the current state of finite state machine.
+		symbol    byte      // Contains the character currently being processed.
+		tokenType TokenType
+		buffer    = make([]byte, 0, 100) // Contains the characters that were read.
+	)
 	for scanner.has() {
 		symbol = scanner.get()
 		tokenType = tokenTypeMap[state]
@@ -232,7 +234,7 @@ func (scanner *Scanner) Next() (TokenType, string) {
 		// The transition to the start state means the end of the token.
 		if state == start {
 			// If the comments are omitted, the next token must be returned.
-			if scanner.SkipComments && tokenType == COMMENT {
+			if scanner.SkipComments && tokenType == Comment {
 				return scanner.Next()
 			}
 			return tokenType, string(buffer)
@@ -249,8 +251,10 @@ func (scanner *Scanner) Next() (TokenType, string) {
 func (scanner *Scanner) SkipLine() string {
 	var buffer = make([]byte, len(scanner.lineStr), 100)
 	copy(buffer, scanner.lineStr)
-	var symbol byte
-	var text string
+	var (
+		symbol byte
+		text   string
+	)
 	for {
 		if scanner.has() {
 			symbol = scanner.get()
