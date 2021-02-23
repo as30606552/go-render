@@ -247,7 +247,7 @@ func (scanner *Scanner) Next() (TokenType, string) {
 // Skips all characters until the beginning of the next line.
 // Returns the string that was skipped, including the characters that were processed before the method was called.
 func (scanner *Scanner) SkipLine() string {
-	var buffer = make([]byte, 100)
+	var buffer = make([]byte, len(scanner.lineStr), 100)
 	copy(buffer, scanner.lineStr)
 	var symbol byte
 	var text string

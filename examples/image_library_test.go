@@ -13,6 +13,7 @@ const (
 	H = 400
 )
 
+// Creates a file with the specified name and places the specified image in it.
 func makeFile(img image.Image, filename string) {
 	var file, err = os.Create(filename)
 	if err != nil {
