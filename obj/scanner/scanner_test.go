@@ -14,7 +14,6 @@ func ExampleScanner_Next_correct() {
 		tokenType, token = s.Next()
 	}
 	// Output:
-	//
 	//WORD : 'word'
 	//SPACE : ' '
 	//INT : '123'
@@ -33,7 +32,6 @@ func ExampleScanner_Next_incorrect() {
 		tokenType, token = s.Next()
 	}
 	// Output:
-	//
 	//UNKNOWN : 'invalid&word'
 	//SPACE : ' '
 	//WORD : 'validWord'
