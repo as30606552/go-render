@@ -3,3 +3,6 @@
 
 # try to generate images by running the code yourself
 examples/pictures
+
+# testable examples output
+obj/testdata/output.txt
