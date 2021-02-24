@@ -38,7 +38,8 @@ func (parser *vertexParser) action(tokenType scanner.TokenType, state stateType,
 		return err
 	// Parsing X coordinate, expected: scanner.FLOAT.
 	case 3:
-		if tokenType == scanner.Int || tokenType == scanner.Float {
+		switch tokenType {
+		case scanner.Int, scanner.Float:
 			var e error
 			parser.point.X, e = strconv.ParseFloat(token, 64)
 			if e != nil {
@@ -46,35 +47,35 @@ func (parser *vertexParser) action(tokenType scanner.TokenType, state stateType,
 				return err
 			}
 			return 4
-		}
-		if tokenType == scanner.Word || tokenType == scanner.Slash || tokenType == scanner.Unknown {
+		case scanner.Word, scanner.Slash, scanner.Unknown:
 			parser.baseParser = baseParser("invalid X coordinate, expected: FLOAT, received: " + tokenType.String())
 			return err
-		}
-		if tokenType == scanner.EOL || tokenType == scanner.EOF {
+		case scanner.EOL, scanner.EOF:
 			parser.baseParser = "X, Y, and Z coordinates are not set"
 			return err
+		default:
+			parser.baseParser = baseParser("impossible token was obtained when reading the X coordinate - " + tokenType.String())
+			return err
 		}
-		parser.baseParser = baseParser("impossible token was obtained when reading the X coordinate - " + tokenType.String())
-		return err
 	// Searching for a delimiter between X and Y coordinates, expected: scanner.SPACE.
 	case 4:
-		if tokenType == scanner.Space {
+		switch tokenType {
+		case scanner.Space:
 			return 5
-		}
-		if tokenType == scanner.Slash {
+		case scanner.Slash:
 			parser.baseParser = "invalid delimiter format between X and Y coordinates, expected: SPACE, received: SLASH"
 			return err
-		}
-		if tokenType == scanner.EOL || tokenType == scanner.EOF {
+		case scanner.EOL, scanner.EOF:
 			parser.baseParser = "Y and Z coordinates are not set"
 			return err
+		default:
+			parser.baseParser = baseParser("impossible token was obtained after reading the X coordinate - " + tokenType.String())
+			return err
 		}
-		parser.baseParser = baseParser("impossible token was obtained after reading the X coordinate - " + tokenType.String())
-		return err
 	// Parsing Y coordinate, expected: scanner.FLOAT.
 	case 5:
-		if tokenType == scanner.Int || tokenType == scanner.Float {
+		switch tokenType {
+		case scanner.Int, scanner.Float:
 			var e error
 			parser.point.Y, e = strconv.ParseFloat(token, 64)
 			if e != nil {
@@ -82,35 +83,35 @@ func (parser *vertexParser) action(tokenType scanner.TokenType, state stateType,
 				return err
 			}
 			return 6
-		}
-		if tokenType == scanner.Word || tokenType == scanner.Slash || tokenType == scanner.Unknown {
+		case scanner.Word, scanner.Slash, scanner.Unknown:
 			parser.baseParser = baseParser("invalid Y coordinate, expected: FLOAT, received: " + tokenType.String())
 			return err
-		}
-		if tokenType == scanner.EOL || tokenType == scanner.EOF {
+		case scanner.EOL, scanner.EOF:
 			parser.baseParser = "Y and Z coordinates are not set"
 			return err
+		default:
+			parser.baseParser = baseParser("impossible token was obtained when reading the Y coordinate - " + tokenType.String())
+			return err
 		}
-		parser.baseParser = baseParser("impossible token was obtained when reading the Y coordinate - " + tokenType.String())
-		return err
 	// Searching for a delimiter between Y and Z coordinates, expected: scanner.SPACE.
 	case 6:
-		if tokenType == scanner.Space {
+		switch tokenType {
+		case scanner.Space:
 			return 7
-		}
-		if tokenType == scanner.Slash {
+		case scanner.Slash:
 			parser.baseParser = "invalid delimiter format between Y and Z coordinates, expected: SPACE, received: SLASH"
 			return err
-		}
-		if tokenType == scanner.EOL || tokenType == scanner.EOF {
+		case scanner.EOL, scanner.EOF:
 			parser.baseParser = "Z coordinate is not set"
 			return err
+		default:
+			parser.baseParser = baseParser("impossible token was obtained after reading the Y coordinate - " + tokenType.String())
+			return err
 		}
-		parser.baseParser = baseParser("impossible token was obtained after reading the Y coordinate - " + tokenType.String())
-		return err
 	// Parsing Z coordinate, expected: scanner.FLOAT.
 	case 7:
-		if tokenType == scanner.Int || tokenType == scanner.Float {
+		switch tokenType {
+		case scanner.Int, scanner.Float:
 			var e error
 			parser.point.Z, e = strconv.ParseFloat(token, 64)
 			if e != nil {
@@ -118,76 +119,77 @@ func (parser *vertexParser) action(tokenType scanner.TokenType, state stateType,
 				return err
 			}
 			return 8
-		}
-		if tokenType == scanner.Word || tokenType == scanner.Slash || tokenType == scanner.Unknown {
+		case scanner.Word, scanner.Slash, scanner.Unknown:
 			parser.baseParser = baseParser("invalid Z coordinate, expected: FLOAT, received: " + tokenType.String())
 			return err
-		}
-		if tokenType == scanner.EOL || tokenType == scanner.EOF {
+		case scanner.EOL, scanner.EOF:
 			parser.baseParser = "Z coordinate is not set"
 			return err
+		default:
+			parser.baseParser = baseParser("impossible token was obtained when reading the Z coordinate - " + tokenType.String())
+			return err
 		}
-		parser.baseParser = baseParser("impossible token was obtained when reading the Z coordinate - " + tokenType.String())
-		return err
 	// Searching for a delimiter between Z coordinate and weight, expected: scanner.SPACE.
 	case 8:
-		if tokenType == scanner.EOL || tokenType == scanner.EOF {
+		switch tokenType {
+		case scanner.EOL, scanner.EOF:
 			return start
-		}
-		if tokenType == scanner.Space {
+		case scanner.Space:
 			return 9
-		}
-		if tokenType == scanner.Slash {
+		case scanner.Slash:
 			parser.baseParser = "invalid delimiter format between Z coordinate and weight parameter, expected: SPACE, received: SLASH"
 			return err
+		default:
+			parser.baseParser = baseParser("impossible token was obtained after reading the Z coordinate - " + tokenType.String())
+			return err
 		}
-		parser.baseParser = baseParser("impossible token was obtained after reading the Z coordinate - " + tokenType.String())
-		return err
 	// Parsing weight, expected: scanner.FLOAT.
 	case 9:
-		if tokenType == scanner.EOL || tokenType == scanner.EOF {
+		switch tokenType {
+		case scanner.EOL, scanner.EOF:
 			return start
-		}
-		if tokenType == scanner.Int || tokenType == scanner.Float {
+		case scanner.Int, scanner.Float:
 			return 10
-		}
-		if tokenType == scanner.Word || tokenType == scanner.Slash || tokenType == scanner.Unknown {
+		case scanner.Word, scanner.Slash, scanner.Unknown:
 			parser.baseParser = baseParser("invalid weight parameter, expected: FLOAT, received: " + tokenType.String())
 			return err
+		default:
+			parser.baseParser = baseParser("impossible token was obtained when reading the weight parameter - " + tokenType.String())
+			return err
 		}
-		parser.baseParser = baseParser("impossible token was obtained when reading the weight parameter - " + tokenType.String())
-		return err
 	// Searching for a whitespace after vertex data, expected: scanner.SPACE.
 	case 10:
-		if tokenType == scanner.EOL || tokenType == scanner.EOF {
+		switch tokenType {
+		case scanner.EOL, scanner.EOF:
 			parser.baseParser = "unsupported vertex parameter - weight, the parameter will be ignored"
 			return warn
-		}
-		if tokenType == scanner.Space {
+		case scanner.Space:
 			return 11
-		}
-		if tokenType == scanner.Slash {
+		case scanner.Slash:
 			parser.baseParser = "unexpected token received after describing a vertex - SLASH"
 			return err
-		}
-		parser.baseParser = baseParser("impossible token was obtained after reading the weight parameter - " + tokenType.String())
-		return err
-	// Search for extra data in a line, expected: scanner.EOL.
-	case 11:
-		if tokenType == scanner.EOL || tokenType == scanner.EOF {
-			parser.baseParser = "unsupported vertex parameter - weight, the parameter will be ignored"
-			return warn
-		}
-		if tokenType == scanner.Space || tokenType == scanner.Comment {
-			parser.baseParser = "impossible token was obtained after reading the weight parameter - SPACE"
+		default:
+			parser.baseParser = baseParser("impossible token was obtained after reading the weight parameter - " + tokenType.String())
 			return err
 		}
-		parser.baseParser = baseParser("unexpected token received after describing a vertex - " + tokenType.String())
+	// Search for extra data in a line, expected: scanner.EOL.
+	case 11:
+		switch tokenType {
+		case scanner.EOL, scanner.EOF:
+			parser.baseParser = "unsupported vertex parameter - weight, the parameter will be ignored"
+			return warn
+		case scanner.Space, scanner.Comment:
+			parser.baseParser = "impossible token was obtained after reading the weight parameter - SPACE"
+			return err
+		default:
+			parser.baseParser = baseParser("unexpected token received after describing a vertex - " + tokenType.String())
+			return err
+		}
+	// Impossible situation.
+	default:
+		parser.baseParser = "impossible state received, supported states: 0-11"
 		return err
 	}
-	// Impossible situation.
-	parser.baseParser = "impossible state received, supported states: 0-11"
-	return err
 }
 
 // Implements the fluentParser interface.

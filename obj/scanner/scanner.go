@@ -12,14 +12,14 @@ type TokenType uint8
 
 const (
 	Word    TokenType = iota // Can consist of letters, numbers, and underscores. Can not start with a number.
-	Int     TokenType = iota // Consists of numbers. Can start with a minus.
-	Float   TokenType = iota // Consists of digits with a dot between them. Can start with a minus.
-	Slash   TokenType = iota // '/' character.
-	Space   TokenType = iota // A sequence of spaces and/or tabs.
-	EOL     TokenType = iota // '\n' character.
-	EOF     TokenType = iota // Indicates that the end of the sequence of bytes being read has been reached.
-	Unknown TokenType = iota // Unknown type of token.
-	Comment TokenType = iota // Starts with the '#' character and ends with the character before the end of the line.
+	Int                      // Consists of numbers. Can start with a minus.
+	Float                    // Consists of digits with a dot between them. Can start with a minus.
+	Slash                    // '/' character.
+	Space                    // A sequence of spaces and/or tabs.
+	EOL                      // '\n' character.
+	EOF                      // Indicates that the end of the sequence of bytes being read has been reached.
+	Unknown                  // Unknown type of token.
+	Comment                  // Starts with the '#' character and ends with the character before the end of the line.
 )
 
 // Converts the state of the finite state machine from which it moved to the initial state to the type of the read token.
@@ -40,16 +40,16 @@ type stateType uint8
 
 const (
 	start      stateType = iota // Initial state.
-	skipLine   stateType = iota // Skipping all characters up to the '\n' character.
-	foundEol   stateType = iota // '\n' character found.
-	foundSpace stateType = iota // Whitespace character found.
-	foundSlash stateType = iota // '/' character found.
-	foundMinus stateType = iota // '-' character was found at the beginning of the token, and a digit is expected.
-	foundDot   stateType = iota // A '.' character is found after an integer, a digit is expected.
-	foundInt   stateType = iota // '\n' character found.
-	foundFloat stateType = iota // A sequence of characters satisfying the Float token is found, a digit is expected.
-	foundWord  stateType = iota // A sequence of characters satisfying the Word token is found.
-	unknown    stateType = iota // An unknown sequence of characters was found.
+	skipLine                    // Skipping all characters up to the '\n' character.
+	foundEol                    // '\n' character found.
+	foundSpace                  // Whitespace character found.
+	foundSlash                  // '/' character found.
+	foundMinus                  // '-' character was found at the beginning of the token, and a digit is expected.
+	foundDot                    // A '.' character is found after an integer, a digit is expected.
+	foundInt                    // '\n' character found.
+	foundFloat                  // A sequence of characters satisfying the Float token is found, a digit is expected.
+	foundWord                   // A sequence of characters satisfying the Word token is found.
+	unknown                     // An unknown sequence of characters was found.
 )
 
 // One of the possible character types that can be contained in a sequence of bytes to be read.
@@ -57,14 +57,14 @@ type symbolType uint8
 
 const (
 	eol    symbolType = iota // '\n'
-	space  symbolType = iota // ' ' or '\t'
-	hash   symbolType = iota // '#'
-	slash  symbolType = iota // '/'
-	minus  symbolType = iota // '-'
-	dot    symbolType = iota // '.'
-	digit  symbolType = iota // '0' - '9'
-	letter symbolType = iota // 'a' - 'z' or 'A' - 'Z' or '_'
-	other  symbolType = iota // Any other character.
+	space                    // ' ' or '\t'
+	hash                     // '#'
+	slash                    // '/'
+	minus                    // '-'
+	dot                      // '.'
+	digit                    // '0' - '9'
+	letter                   // 'a' - 'z' or 'A' - 'Z' or '_'
+	other                    // Any other character.
 )
 
 // Calculates the character type.
