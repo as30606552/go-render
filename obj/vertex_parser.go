@@ -22,12 +22,17 @@ func (parser *vertexParser) action(tokenType scanner.TokenType, state stateType,
 	switch state {
 	// Initial condition: initialize the vertex of the model.
 	case start:
-		if tokenType == scanner.Space {
+		switch tokenType {
+		case scanner.Space:
 			parser.point = three_dim_model.Vertex{}
 			return 3
+		case scanner.EOL, scanner.EOF:
+			parser.baseParser = "not specified coordinates of the vertex"
+			return err
+		default:
+			parser.baseParser = baseParser("impossible token was obtained in the start state - " + tokenType.String())
+			return err
 		}
-		parser.baseParser = baseParser("impossible token was obtained in the start state - " + tokenType.String())
-		return err
 	// Impossible situation.
 	case err:
 		parser.baseParser = "parser cannot be used in the error state"

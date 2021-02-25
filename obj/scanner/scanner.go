@@ -122,9 +122,10 @@ type Scanner struct {
 	bufpos  uint8         // The position of the currently processed byte in the buffer.
 	buflast uint8         // The number of bytes contained in the buffer.
 
-	lineStr  []byte // Current processed line string.
-	line     int    // The number of the currently processed line.
-	position int    // The position of the currently processed character relative to the beginning of the byte sequence.
+	lineStr    []byte // Current processed line string.
+	switchLine bool   // true if the scanner has moved to a new line.
+	line       int    // The number of the currently processed line.
+	position   int    // The position of the currently processed character relative to the beginning of the byte sequence.
 
 	Error        func(error) // The function called in case of an error.
 	SkipComments bool        // true if comments should be skipped.
@@ -197,9 +198,13 @@ func (scanner *Scanner) get() byte {
 // Calls the get method without checking the existence of the next character,
 // so it must only be called if the next character exists.
 func (scanner *Scanner) step() {
+	if scanner.switchLine {
+		scanner.refreshLine()
+		scanner.switchLine = false
+	}
 	var symbol = scanner.get()
 	if symbol == '\n' {
-		scanner.refreshLine()
+		scanner.switchLine = true
 	} else {
 		scanner.lineStr = append(scanner.lineStr, symbol)
 	}
@@ -247,42 +252,40 @@ func (scanner *Scanner) Next() (TokenType, string) {
 }
 
 // Skips all characters until the beginning of the next line.
-// Returns the string that was skipped, including the characters that were processed before the method was called.
-func (scanner *Scanner) SkipLine() string {
-	var buffer = make([]byte, len(scanner.lineStr), 100)
-	copy(buffer, scanner.lineStr)
-	var (
-		symbol byte
-		text   string
-	)
-	for {
-		if scanner.has() {
-			symbol = scanner.get()
-			if symbol == '\n' {
-				text = string(buffer)
-				scanner.step()
-				return text
-			}
-			buffer = append(buffer, symbol)
-			scanner.step()
-		} else {
-			return string(buffer)
+func (scanner *Scanner) SkipLine() {
+	if scanner.switchLine {
+		return
+	}
+	var symbol byte
+	for scanner.has() {
+		symbol = scanner.get()
+		scanner.step()
+		if symbol == '\n' {
+			return
 		}
 	}
 }
 
-// Returns the position of the character currently being processed by the Scanner
+// Returns the position of the character that was last processed by the Scanner
 // relative to the beginning of the sequence of bytes being read.
 func (scanner *Scanner) Position() int {
-	return scanner.position
+	return scanner.position - 1
 }
 
-// Returns the number of the line currently being processed by the Scanner.
+// Returns the number of the line that was last processed by the Scanner.
 func (scanner *Scanner) Line() int {
 	return scanner.line
 }
 
-// Returns the position in the line currently being processed by the Scanner.
+// Returns the line fragment that was read by the scanner.
+func (scanner *Scanner) LineString() string {
+	return string(scanner.lineStr)
+}
+
+// Returns the position in the line that was last processed by the Scanner.
 func (scanner *Scanner) Column() int {
-	return len(scanner.lineStr)
+	if scanner.switchLine || !scanner.has() {
+		return len(scanner.lineStr)
+	}
+	return len(scanner.lineStr) - 1
 }

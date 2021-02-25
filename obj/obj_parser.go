@@ -252,11 +252,23 @@ func (parser *Parser) error(msg, token string) {
 	if parser.IgnoreErrors {
 		parser.scanner.SkipLine()
 	} else {
-		var column = parser.scanner.Column() - len(token)
+		var tokenLength int
+		switch token {
+		case "\n":
+			token = "\\n"
+			tokenLength = 1
+		case "":
+			token = "eof"
+			tokenLength = 1
+		default:
+			tokenLength = len(token)
+		}
+		var column = parser.scanner.Column() - tokenLength + 2
+		parser.scanner.SkipLine()
 		fmt.Fprintf(
 			parser.Output,
 			"[ERROR] line: %d, column: %d, token: '%s', message: %s\n",
-			parser.scanner.Line(),
+			parser.scanner.Line()+1,
 			column,
 			token,
 			msg+", the line will be skipped",
@@ -264,11 +276,11 @@ func (parser *Parser) error(msg, token string) {
 		fmt.Fprintln(
 			parser.Output,
 			strings.Repeat(" ", 7),
-			"-> ",
-			parser.scanner.SkipLine(),
+			"->",
+			parser.scanner.LineString(),
 			"\n",
-			strings.Repeat(" ", column+10),
-			strings.Repeat("^", len(token)),
+			strings.Repeat(" ", column+8),
+			strings.Repeat("^", tokenLength),
 		)
 	}
 }
@@ -277,13 +289,11 @@ func (parser *Parser) error(msg, token string) {
 // [WARNING] line: {line number}, message: {warning message}
 // Note that the method does not skip the line.
 func (parser *Parser) warning(msg string) {
-	if parser.IgnoreWarnings {
-		parser.scanner.SkipLine()
-	} else {
+	if !parser.IgnoreWarnings {
 		fmt.Fprintf(
 			parser.Output,
 			"[WARNING] line: %d, message: %s\n",
-			parser.scanner.Line(),
+			parser.scanner.Line()+1,
 			msg,
 		)
 	}
