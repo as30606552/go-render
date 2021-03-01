@@ -18,6 +18,28 @@ func NewImage(width, height uint) *Image {
 	return &Image{image.NewRGBA(image.Rect(0, 0, int(width), int(height)))}
 }
 
+// Creates an all-white png image with the size W*H in the examples/pictures directory.
+func WhiteImage(width, height  int) *Image {
+	var img = image.NewRGBA(image.Rect(0, 0, int(width), int(height)))
+	for i := 0; i < width; i++ {
+		for j := 0; j < height; j++ {
+			img.SetRGBA(i, j, color.RGBA{255, 255, 255, 255})
+		}
+	}
+	return &Image{img}
+}
+
+// Creates an all-black png image with the size W*H in the examples/pictures directory.
+func BlackImage(width, height  int) *Image {
+	var img = image.NewRGBA(image.Rect(0, 0, int(width), int(height)))
+	for i := 0; i < width; i++ {
+		for j := 0; j < height; j++ {
+			img.SetRGBA(i, j, color.RGBA{0, 0, 0, 255})
+		}
+	}
+	return &Image{img}
+}
+
 func (img Image) ColorModel() color.Model {
 	return img.ColorModel()
 }
@@ -54,40 +76,41 @@ func (img Image) Save(filename string) error {
 	return file.Close()
 }
 
-// Create a line by Bresenham algorithm: calculate the y-axis offset relative to the center
-// of the pixel at each step and, if the value exceeds 0.5, shift the displayed pixel by one position up/down
-func (img Image) Line(x0, y0, x1, y1 int, rgb RGB) Image {
+//Line drawing method.
+//Takes 2 points coordinates (x0, y0), (x1, y1) and line color (rgb) as input.
+//Returns the picture from the drawn line.
+func (img *Image) Line(point1, point2 image.Point, rgb RGB) Image {
 	steep := false
-	if math.Abs(float64(x0-x1)) < math.Abs(float64(y0-y1)) {
-		x0, y0 = y0, x0
-		x1, y1 = y1, x1
+	if math.Abs(float64(point1.X-point2.X)) < math.Abs(float64(point1.Y-point2.Y)) {
+		point1.X, point1.Y = point1.Y, point1.X
+		point2.X, point2.Y = point2.Y, point2.X
 		steep = true
 	}
-	if x0 > x1 {
-		x0, x1 = x1, x0
-		y0, y1 = y1, y0
+	if point1.X > point2.X {
+		point1.X, point2.X = point2.X, point1.X
+		point1.Y, point2.Y = point2.Y, point1.Y
 	}
-	dx := x1 - x0
-	dy := y1 - y0
+	dx := point2.X - point1.X
+	dy := point2.Y - point1.Y
 	derr := math.Abs(float64(dy) / float64(dx))
 	err := 0.0
-	y := y0
-
-	for x := x0; x <= x1; x++ {
+	y := point1.Y
+	//calculate the y-axis offset relative to the center of the pixel at each step
+	for x := point1.X; x <= point2.X; x++ {
 		if steep {
 			img.Set(y, x, rgb)
 		} else {
 			img.Set(x, y, rgb)
 		}
 		err += derr
-		if err > 0.5 {
-			if y1 > y0 {
+		if err > 0.5 { //if the value exceeds 0.5, shift the displayed pixel by one position up/dow
+			if point2.Y > point1.Y {
 				y += 1
 			} else {
-				y += -1
+				y -= 1
 			}
 			err -= 1.0
 		}
 	}
-	return img
+	return *img
 }

@@ -4,55 +4,31 @@ import (
 	"computer_graphics/pngimage"
 	"fmt"
 	"image"
-	"image/color"
 	"math"
 )
 
 const (
-	W1 = 200
-	H1 = 200
-	x0 = 100
-	y0 = 100
+	W = 200 //Image Width
+	H = 200 //Image height
+	x0 = 100 //The coordinate of the origin point for drawing a star (by X)
+	y0 = 100 //The coordinate of the origin point for drawing a star (by Y)
 )
 
-var img = image.NewRGBA(image.Rect(0, 0, W1, H1))
-var rgba = color.RGBA{255, 0, 0, 255}
-var lineImg = pngimage.NewImage(W1, H1)
-var rgb = pngimage.NewRGB(255, 255, 255)
-
-// Creates an all-white png image with the size W1*H1 in the examples/pictures directory.
-func Image() {
-	for i := 0; i < W1; i++ {
-		for j := 0; j < H1; j++ {
-			img.SetRGBA(i, j, color.RGBA{255, 255, 255, 255})
-		}
-	}
-}
-
-// Creates an all-white png image with the size W1*H1 in the examples/pictures directory.
-func ImageBresenham() {
-	for i := 0; i < W1; i++ {
-		for j := 0; j < H1; j++ {
-			lineImg.Set(i, j, *rgb)
-		}
-	}
-}
-
 // Creates a 12-pointed star line using the specified method
-func StarLine(numberMethod int) {
+func StarLine(nameMethod string, img pngimage.Image, rgb pngimage.RGB) {
 	for i := 0; i < 12; i++ {
 		alpha := (float64(2*i) * math.Pi) / 13
 		x := int(100 + 95*math.Cos(alpha))
 		y := int(100 + 95*math.Sin(alpha))
-		switch numberMethod {
-		case 1:
-			SimplestMethod(x0, y0, x, y, rgba)
-		case 2:
-			SecondMethod(x0, y0, x, y, rgba)
-		case 3:
-			ThirdMethod(x0, y0, x, y, rgba)
-		case 4:
-			lineImg.Line(x0, y0, x, y, *rgb)
+		switch nameMethod {
+		case "SimplestMethod":
+			SimplestMethod(image.Point{x0,y0}, image.Point{x,y}, img, rgb)
+		case "SecondMethod":
+			SecondMethod(image.Point{x0,y0}, image.Point{x,y}, img, rgb)
+		case "ThirdMethod":
+			ThirdMethod(image.Point{x0,y0}, image.Point{x,y}, img, rgb)
+		case "BresenhamMethod":
+			img.Line(image.Point{x0,y0}, image.Point{x,y}, rgb)
 		default:
 			fmt.Println("can't draw a star")
 		}
@@ -60,78 +36,82 @@ func StarLine(numberMethod int) {
 }
 
 // Create a line by drawing N points on a straight line
-func SimplestMethod(x0, y0, x1, y1 int, rgba color.RGBA) {
+func SimplestMethod(point1, point2 image.Point, img pngimage.Image, rgb pngimage.RGB) {
 	for t := 0.0; t < 1.0; t += 0.01 {
-		x := int(float64(x0)*(1.0-t) + float64(x1)*t)
-		y := int(float64(y0)*(1.0-t) + float64(y1)*t)
-		img.Set(x, y, rgba)
+		x := int(float64(point1.X)*(1.0-t) + float64(point2.X)*t)
+		y := int(float64(point1.Y)*(1.0-t) + float64(point2.Y)*t)
+		img.Set(x, y, rgb)
 	}
 }
 
 // Create a line by set the x values in increments of one pixel, and calculate the y values for them
-func SecondMethod(x0, y0, x1, y1 int, rgba color.RGBA) {
-	for x := x0; x <= x1; x++ {
-		t := float64(x-x0) / float64(x1-x0)
-		y := int(float64(y0)*(1.0-t) + float64(y1)*t)
-		img.Set(x, y, rgba)
+func SecondMethod(point1, point2 image.Point, img pngimage.Image, rgb pngimage.RGB) {
+	for x := point1.X; x <= point2.X; x++ {
+		t := float64(x-point1.X) / float64(point2.X-point1.X)
+		y := int(float64(point1.Y)*(1.0-t) + float64(point2.Y)*t)
+		img.Set(x, y, rgb)
 	}
 }
 
 // Create a line by an improved the third method
-func ThirdMethod(x0, y0, x1, y1 int, rgba color.RGBA) {
+func ThirdMethod(point1, point2 image.Point, img pngimage.Image, rgb pngimage.RGB) {
 	steep := false
-	if math.Abs(float64(x0-x1)) < math.Abs(float64(y0-y1)) {
-		x0, y0 = y0, x0
-		x1, y1 = y1, x1
+	if math.Abs(float64(point1.X-point2.X)) < math.Abs(float64(point1.Y-point2.Y)) {
+		point1.X, point1.Y = point1.Y, point1.X
+		point2.X, point2.Y = point2.Y, point2.X
 		steep = true
 	}
-	if x0 > x1 {
-		x0, x1 = x1, x0
-		y0, y1 = y1, y0
+	if point1.X > point2.X {
+		point1.X, point2.X = point2.X, point1.X
+		point1.Y, point2.Y = point2.Y, point1.Y
 	}
-	for x := x0; x <= x1; x++ {
-		t := float64(x-x0) / float64(x1-x0)
-		y := int(float64(y0)*(1.0-t) + float64(y1)*t)
+	for x := point1.X; x <= point2.X; x++ {
+		t := float64(x-point1.X) / float64(point2.X-point1.X)
+		y := int(float64(point1.Y)*(1.0-t) + float64(point2.Y)*t)
 		if steep {
-			img.Set(y, x, rgba)
+			img.Set(y, x, rgb)
 		} else {
-			img.Set(x, y, rgba)
+			img.Set(x, y, rgb)
 		}
 	}
 }
 
 // Example of creating a simplest method image
 func ExampleSimplestMethod() {
-	Image()
-	StarLine(1)
-	makeFile(img, "pictures/simplest_method_image.png")
+	var img = pngimage.WhiteImage(W, H)
+	var rgb = pngimage.NewRGB(255, 0, 0)
+	StarLine("SimplestMethod", *img, *rgb)
+	img.Save( "pictures/simplest_method_image.png")
 	fmt.Println("Ok")
 	// Output: Ok
 }
 
 // Example of creating a second method image
 func ExampleSecondMethod() {
-	Image()
-	StarLine(2)
-	makeFile(img, "pictures/second_method_image.png")
+	var img = pngimage.WhiteImage(W, H)
+	var rgb = pngimage.NewRGB(255, 0, 0)
+	StarLine("SecondMethod", *img, *rgb)
+	img.Save("pictures/second_method_image.png")
 	fmt.Println("Ok")
 	// Output: Ok
 }
 
 // Example of creating a third method image
 func ExampleThirdMethod() {
-	Image()
-	StarLine(3)
-	makeFile(img, "pictures/third_method_image.png")
+	var img = pngimage.WhiteImage(W, H)
+	var rgb = pngimage.NewRGB(255, 0, 0)
+	StarLine("ThirdMethod", *img, *rgb)
+	img.Save("pictures/third_method_image.png")
 	fmt.Println("Ok")
 	// Output: Ok
 }
 
 // Example of creating a Bresenham method image
 func ExampleBresenhamMethod() {
-	ImageBresenham()
-	StarLine(4)
-	//makeFile(lineImg, "pictures/bresenham_method_image.png")
+	var img = pngimage.WhiteImage(W, H)
+	var rgb = pngimage.NewRGB(255, 0, 0)
+	StarLine("BresenhamMethod", *img, *rgb)
+	img.Save( "pictures/bresenham_method_image.png")
 	fmt.Println("Ok")
 	// Output: Ok
 }

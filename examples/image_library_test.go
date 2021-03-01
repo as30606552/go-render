@@ -8,10 +8,6 @@ import (
 	"os"
 )
 
-const (
-	W = 600
-	H = 400
-)
 
 func makeFile(img image.Image, filename string) {
 	var file, err = os.Create(filename)
