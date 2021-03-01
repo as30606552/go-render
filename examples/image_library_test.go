@@ -6,9 +6,11 @@ import (
 	"image/color"
 	"image/png"
 	"os"
+	"testing"
 )
 
 
+// Creates a file with the specified name and places the specified image in it.
 func makeFile(img image.Image, filename string) {
 	var file, err = os.Create(filename)
 	if err != nil {
@@ -65,6 +67,16 @@ func GradientImage() {
 		}
 	}
 	makeFile(img, "pictures/gradient_image.png")
+}
+
+func TestMain(m *testing.M) {
+	if _, err := os.Stat("pictures"); os.IsNotExist(err) {
+		err = os.Mkdir("pictures", os.ModePerm)
+		if err != nil {
+			panic(err)
+		}
+	}
+	m.Run()
 }
 
 // Example of creating a black image

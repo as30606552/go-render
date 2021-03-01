@@ -4,11 +4,13 @@ Building an image based on a 3D model specified by the *.obj file.
 
 ### User guide
 
-Use cases are located in the directory 'examples'.
+Some global examples are located in the 'examples' directory. 
+Examples of the use of specific functions are found in the packages in which these functions are defined.
 To run all the examples, follow these steps:
+
 1. [Download](https://golang.org/dl/) and install the go compiler.
-2. Create a directory 'pictures' in the directory 'examples' so that the examples can store the generated images in it.
-3. Run the `go test` command in the directory 'examples'.
+2. Run the `go test -v ./...` command in the global project directory.
+3. Create a main.go file, copy the sample code there, and experiment.
 
 ### Created with
 
