@@ -1,4 +1,4 @@
-package three_dim_model
+package model
 
 // Describes a point in three-dimensional space.
 // Contains three coordinates of the point: X, Y, Z.
@@ -11,12 +11,9 @@ func NewVertex(x float64, y float64, z float64) *Vertex {
 	return &Vertex{X: x, Y: y, Z: z}
 }
 
-// Another name for the Vertex slice.
-type Vertices []Vertex
-
 // Describes a complete three-dimensional model.
 type Model struct {
-	vertices Vertices
+	vertices []Vertex
 }
 
 // Creates a new three-dimensional model with zero vertices and reserves memory space for 10 vertices.

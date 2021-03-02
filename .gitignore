@@ -5,4 +5,4 @@
 examples/pictures
 
 # testable examples output
-obj/testdata/output.txt
+obj/parser/testdata/output.txt

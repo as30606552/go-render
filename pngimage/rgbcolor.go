@@ -9,7 +9,7 @@ type RGB struct {
 	R, G, B uint8
 }
 
-// Creates a new Image object with the specified red, green and blue values.
+// Creates a new RGB object with the specified red, green and blue values.
 func NewRGB(r, g, b uint8) *RGB {
 	return &RGB{R: r, G: g, B: b}
 }
