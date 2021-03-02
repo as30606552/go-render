@@ -309,7 +309,7 @@ func (parser *Parser) Next() (ElementType, interface{}) {
 			for {
 				tokenType, token = parser.scanner.Next()
 				prevState = state
-				state = p.next(tokenType, state)
+				state = p.next(tokenType, prevState)
 				switch state {
 				// The transition to the start state means the successful completion of the parser.
 				case start:

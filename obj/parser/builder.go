@@ -156,14 +156,14 @@ func (p *intParameter) updateMachine(machine *finiteStateMachine, unreadParamsSt
 	}
 	machine.newMatrixColumn(err, state, err, err, err, onEndState, onEndState, err, err)
 	machine.newErrorsColumn(
-		"invalid "+p.name+" excepted: INT, received: WORD",
+		"invalid "+p.name+", excepted: INT, received: WORD",
 		"",
-		"invalid "+p.name+" excepted: INT, received: FLOAT",
-		"invalid "+p.name+" excepted: INT, received: SLASH",
+		"invalid "+p.name+", excepted: INT, received: FLOAT",
+		"invalid "+p.name+", excepted: INT, received: SLASH",
 		"impossible token received when reading the "+p.name+" - SPACE",
 		onEndMessage,
 		onEndMessage,
-		"invalid "+p.name+" excepted: INT, received: UNKNOWN",
+		"invalid "+p.name+", excepted: INT, received: UNKNOWN",
 		"impossible token received when reading the "+p.name+" - COMMENT",
 	)
 	var convertError = "failed to convert the token to an integer when reading " + p.name
@@ -271,14 +271,14 @@ func (p *floatParameter) updateMachine(machine *finiteStateMachine, unreadParams
 	}
 	machine.newMatrixColumn(err, state, state, err, err, onEndState, onEndState, err, err)
 	machine.newErrorsColumn(
-		"invalid "+p.name+" excepted: FLOAT, received: WORD",
+		"invalid "+p.name+", excepted: FLOAT, received: WORD",
 		"",
 		"",
-		"invalid "+p.name+" excepted: FLOAT, received: SLASH",
+		"invalid "+p.name+", excepted: FLOAT, received: SLASH",
 		"impossible token received when reading the "+p.name+" - SPACE",
 		onEndMessage,
 		onEndMessage,
-		"invalid "+p.name+" excepted: FLOAT, received: UNKNOWN",
+		"invalid "+p.name+", excepted: FLOAT, received: UNKNOWN",
 		"impossible token received when reading the "+p.name+" - COMMENT",
 	)
 	var convertError = "failed to convert the token to a float when reading " + p.name
@@ -738,23 +738,47 @@ func buildParser(elementType ElementType, element interface{}) elementParser {
 	var (
 		value      = reflect.New(reflect.TypeOf(element)).Elem()
 		params     = buildParameters(value)
-		paramNames = make([]string, len(params))
+		paramNames = make([]string, 0, len(params))
 		machine    = newFiniteStateMachine(value, elementType)
 	)
-	for i, param := range params {
-		paramNames[i] = param.getNameNotOptional()
+	var paramString string
+	for _, param := range params {
+		paramString = param.getNameNotOptional()
+		if paramString != "" {
+			paramNames = append(paramNames, paramString)
+		}
 	}
 	var (
 		unreadParamsString string
 		unreadParamsCount  int
 		onEndState         stateType
 		onEndMessage       string
+		state              stateType
 	)
 	for i, param := range params {
-		unreadParamsString = strings.Join(paramNames[i+1:], ", ")
-		unreadParamsCount = len(paramNames) - i - 2
+		if i >= len(paramNames) {
+			unreadParamsString = ""
+			unreadParamsCount = 0
+		} else {
+			unreadParamsString = strings.Join(paramNames[i+1:], ", ")
+			unreadParamsCount = len(paramNames) - i - 1
+		}
 		param.updateMachine(machine, unreadParamsString, unreadParamsCount)
+		state = machine.nextState()
 		if i == len(params)-1 {
+			machine.newMatrixColumn(err, err, err, err, state, start, start, err, err)
+			machine.newErrorsColumn(
+				"impossible token received after reading the "+param.getName()+" - WORD",
+				"impossible token received after reading the "+param.getName()+" - INT",
+				"impossible token received after reading the "+param.getName()+" - FLOAT",
+				"unexpected token received after reading the "+param.getName()+" - SLASH",
+				"",
+				"",
+				"",
+				"impossible token received after reading the "+param.getName()+" - UNKNOWN",
+				"impossible token received after reading the "+param.getName()+" - COMMENT",
+			)
+			machine.newAction(func(token string) {})
 			machine.newMatrixColumn(err, err, err, err, err, start, start, err, err)
 			machine.newErrorsColumn(
 				"unexpected token received after describing a "+elementType.String()+" - WORD",
@@ -768,7 +792,7 @@ func buildParser(elementType ElementType, element interface{}) elementParser {
 				"impossible token received after describing a "+elementType.String()+" - COMMENT",
 			)
 			machine.newAction(func(token string) {
-				panic("the action method is called in the start state")
+				panic("the action method cannot be called in a state from which transitions are made only to the start state and the err state")
 			})
 		} else {
 			switch unreadParamsCount {
@@ -782,7 +806,7 @@ func buildParser(elementType ElementType, element interface{}) elementParser {
 				onEndState = err
 				onEndMessage = "parameters " + unreadParamsString + " are not specified"
 			}
-			machine.newMatrixColumn(err, err, err, err, machine.nextState(), onEndState, onEndState, err, err)
+			machine.newMatrixColumn(err, err, err, err, state, onEndState, onEndState, err, err)
 			machine.newErrorsColumn(
 				"impossible token received after reading the "+param.getName()+" - WORD",
 				"impossible token received after reading the "+param.getName()+" - INT",
