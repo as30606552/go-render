@@ -4,7 +4,7 @@ import (
 	"io"
 )
 
-// One of the possible values that the scanner.Next method returns.
+// One of the possible values that the Scanner.Next method returns.
 type TokenType uint8
 
 const (
@@ -149,7 +149,7 @@ type scanner struct {
 	skipComments bool   // true if comments should be skipped.
 }
 
-// Creates a new scanner that reads from the reader.
+// Creates a new Scanner that reads from the reader.
 // Sets skipping comments by default.
 func NewScanner(reader io.Reader) Scanner {
 	var scanner = scanner{reader: reader, skipComments: true}
