@@ -195,8 +195,8 @@ type elementParser interface {
 	// and the type of token that was received when going to the err state.
 	message(tokenType scanner.TokenType, state stateType) string
 	// Returns a structure containing the read data from the string.
-	// The  elementParser must ensure that the return value can be safely cast to the type of the element
-	// that the elementParser processes.
+	// The elementParser must ensure that the return value can be safely cast
+	// to the appropriate structure from the package types.
 	result() interface{}
 }
 

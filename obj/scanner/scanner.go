@@ -19,6 +19,9 @@ const (
 	Comment                  // Starts with the '#' character and ends with the character before the end of the line.
 )
 
+// Number of different token options.
+const TokensCount = 9
+
 // Converts the state of the finite state machine from which it moved to the initial state to the type of the read token.
 // See https://github.com/as30606552/ComputerGraphicsProject/wiki/Scanner.
 var tokenTypeMap = [...]TokenType{Unknown, Comment, EOL, Space, Slash, Unknown, Unknown, Integer, Float, Word, Unknown}

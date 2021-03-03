@@ -2,16 +2,88 @@ package parser
 
 import (
 	"computer_graphics/obj/scanner"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 )
 
+const (
+	noErrorMassage                = ""
+	parserUsedInErrorStateMessage = "parser cannot be used in the error state"
+)
+
+func impossibleTokenInStartStateError(tokenType scanner.TokenType) string {
+	return fmt.Sprintf("impossible token received in the start state - %s", tokenType)
+}
+
+func impossibleTokenWhenReadingParameterError(param parameter, tokenType scanner.TokenType) string {
+	return fmt.Sprintf("impossible token received when reading the %s - %s", param.getName(), tokenType)
+}
+
+func impossibleTokenAfterReadingParameterError(param parameter, tokenType scanner.TokenType) string {
+	return fmt.Sprintf("impossible token received after reading the %s - %s", param.getName(), tokenType)
+}
+
+func impossibleTokenAfterDescribingElementError(elementType ElementType, tokenType scanner.TokenType) string {
+	return fmt.Sprintf("impossible token received after describing a %s - %s", elementType, tokenType)
+}
+
+func unexpectedTokenAfterReadingParameterError(param parameter, tokenType scanner.TokenType) string {
+	return fmt.Sprintf("unexpected token received after reading the %s - %s", param.getName(), tokenType)
+}
+
+func unexpectedTokenAfterDescribingElementError(elementType ElementType, tokenType scanner.TokenType) string {
+	return fmt.Sprintf("unexpected token received after describing a %s - %s", elementType, tokenType)
+}
+
+func parametersNotSpecifiedError(unreadParamsString string, unreadParamsCount int) string {
+	if unreadParamsCount == 1 {
+		return fmt.Sprintf("parameter %s is not specified", unreadParamsString)
+	} else {
+		return fmt.Sprintf("parameters %s are not specified", unreadParamsString)
+	}
+}
+
+func notSpecifiedParametersOfElementTypeError(elementType ElementType) string {
+	return fmt.Sprintf("not specified parameters of the %s", elementType)
+}
+
+func invalidParameterError(param parameter, expected, received scanner.TokenType) string {
+	return fmt.Sprintf("invalid %s, excepted: %s, received: %s", param.getName(), expected, received)
+}
+
+func invalidDelimiterBetweenParametersError(first, second parameter, expected, received scanner.TokenType) string {
+	return fmt.Sprintf(
+		"invalid delimiter format between %s and %s, expected: %s, received: %s",
+		first.getName(),
+		second.getName(),
+		expected,
+		received,
+	)
+}
+
+type action func(token string)
+
+var (
+	noAction         action = func(token string) {}
+	startStateAction        = func(token string) { panic("the action method is called in the err state") }
+	lastStateAction         = func(token string) {
+		panic("the action method cannot be called in a state from which transitions are made only to the start state and the err state")
+	}
+)
+
+type machineRow struct {
+	matrixRow [scanner.TokensCount]stateType
+	action    action
+	errorsRow [scanner.TokensCount]string
+}
+
 type finiteStateMachine struct {
 	element reflect.Value
-	matrix  [][]stateType
-	actions []func(token string)
-	errors  [][]string
+	matrix  [][scanner.TokensCount]stateType
+	actions []action
+	errors  [][scanner.TokensCount]string
 }
 
 func (m *finiteStateMachine) clearElement() {
@@ -31,39 +103,17 @@ func (m *finiteStateMachine) clearElement() {
 }
 
 func (m *finiteStateMachine) nextState() stateType {
-	return stateType(len(m.matrix[0]) + 1)
+	return stateType(len(m.matrix) + 1)
 }
 
-func (m *finiteStateMachine) newMatrixColumn(word, integer, float, slash, space, eol, eof, unknown, comment stateType) {
-	m.matrix[scanner.Word] = append(m.matrix[scanner.Word], word)
-	m.matrix[scanner.Integer] = append(m.matrix[scanner.Integer], integer)
-	m.matrix[scanner.Float] = append(m.matrix[scanner.Float], float)
-	m.matrix[scanner.Slash] = append(m.matrix[scanner.Slash], slash)
-	m.matrix[scanner.Space] = append(m.matrix[scanner.Space], space)
-	m.matrix[scanner.EOL] = append(m.matrix[scanner.EOL], eol)
-	m.matrix[scanner.EOF] = append(m.matrix[scanner.EOF], eof)
-	m.matrix[scanner.Unknown] = append(m.matrix[scanner.Unknown], unknown)
-	m.matrix[scanner.Comment] = append(m.matrix[scanner.Comment], comment)
-}
-
-func (m *finiteStateMachine) newAction(action func(token string)) {
-	m.actions = append(m.actions, action)
-}
-
-func (m *finiteStateMachine) newErrorsColumn(word, integer, float, slash, space, eol, eof, unknown, comment string) {
-	m.errors[scanner.Word] = append(m.errors[scanner.Word], word)
-	m.errors[scanner.Integer] = append(m.errors[scanner.Integer], integer)
-	m.errors[scanner.Float] = append(m.errors[scanner.Float], float)
-	m.errors[scanner.Slash] = append(m.errors[scanner.Slash], slash)
-	m.errors[scanner.Space] = append(m.errors[scanner.Space], space)
-	m.errors[scanner.EOL] = append(m.errors[scanner.EOL], eol)
-	m.errors[scanner.EOF] = append(m.errors[scanner.EOF], eof)
-	m.errors[scanner.Unknown] = append(m.errors[scanner.Unknown], unknown)
-	m.errors[scanner.Comment] = append(m.errors[scanner.Comment], comment)
+func (m *finiteStateMachine) update(row *machineRow) {
+	m.matrix = append(m.matrix, row.matrixRow)
+	m.actions = append(m.actions, row.action)
+	m.errors = append(m.errors, row.errorsRow)
 }
 
 func (m *finiteStateMachine) next(tokenType scanner.TokenType, state stateType) stateType {
-	return m.matrix[tokenType][state]
+	return m.matrix[state][tokenType]
 }
 
 func (m *finiteStateMachine) action(state stateType, token string) {
@@ -71,60 +121,55 @@ func (m *finiteStateMachine) action(state stateType, token string) {
 }
 
 func (m *finiteStateMachine) message(tokenType scanner.TokenType, state stateType) string {
-	return m.errors[tokenType][state]
+	return m.errors[state][tokenType]
 }
 
 func (m *finiteStateMachine) result() interface{} {
-	var elementCopy = m.element.Interface()
-	return elementCopy
+	return m.element.Interface()
 }
 
 func newFiniteStateMachine(element reflect.Value, elementType ElementType) *finiteStateMachine {
 	var m = finiteStateMachine{
 		element: element,
-		matrix:  make([][]stateType, 9),
-		actions: make([]func(token string), 0, 10),
-		errors:  make([][]string, 9),
+		matrix:  make([][scanner.TokensCount]stateType, 0, 10),
+		actions: make([]action, 0, 10),
+		errors:  make([][scanner.TokensCount]string, 0, 10),
 	}
-	for i := 0; i < 9; i++ {
-		m.matrix[i] = make([]stateType, 0, 10)
-		m.errors[i] = make([]string, 0, 10)
-	}
-	m.newMatrixColumn(err, err, err, err, 2, err, err, err, err)
-	m.newErrorsColumn(
-		"impossible token received in the start state - WORD",
-		"impossible token received in the start state - INTEGER",
-		"impossible token received in the start state - FLOAT",
-		"impossible token received in the start state - SLASH",
-		"",
-		"not specified parameters of the "+elementType.String(),
-		"not specified parameters of the "+elementType.String(),
-		"impossible token received in the start state - UNKNOWN",
-		"impossible token received in the start state - COMMENT",
-	)
-	m.newAction(func(token string) {
-		m.clearElement()
+	m.update(&machineRow{
+		matrixRow: [...]stateType{err, err, err, err, 2, err, err, err, err},
+		action:    func(token string) { m.clearElement() },
+		errorsRow: [...]string{
+			impossibleTokenInStartStateError(scanner.Word),
+			impossibleTokenInStartStateError(scanner.Integer),
+			impossibleTokenInStartStateError(scanner.Float),
+			impossibleTokenInStartStateError(scanner.Slash),
+			noErrorMassage,
+			notSpecifiedParametersOfElementTypeError(elementType),
+			notSpecifiedParametersOfElementTypeError(elementType),
+			impossibleTokenInStartStateError(scanner.Unknown),
+			impossibleTokenInStartStateError(scanner.Comment),
+		},
 	})
-	m.newMatrixColumn(err, err, err, err, err, err, err, err, err)
-	m.newErrorsColumn(
-		"parser cannot be used in the error state",
-		"parser cannot be used in the error state",
-		"parser cannot be used in the error state",
-		"parser cannot be used in the error state",
-		"parser cannot be used in the error state",
-		"parser cannot be used in the error state",
-		"parser cannot be used in the error state",
-		"parser cannot be used in the error state",
-		"parser cannot be used in the error state",
-	)
-	m.newAction(func(token string) {
-		panic("the action method is called in the err state")
+	m.update(&machineRow{
+		matrixRow: [...]stateType{err, err, err, err, err, err, err, err, err},
+		action:    startStateAction,
+		errorsRow: [...]string{
+			parserUsedInErrorStateMessage,
+			parserUsedInErrorStateMessage,
+			parserUsedInErrorStateMessage,
+			parserUsedInErrorStateMessage,
+			parserUsedInErrorStateMessage,
+			parserUsedInErrorStateMessage,
+			parserUsedInErrorStateMessage,
+			parserUsedInErrorStateMessage,
+			parserUsedInErrorStateMessage,
+		},
 	})
 	return &m
 }
 
 type parameter interface {
-	updateMachine(machine *finiteStateMachine, unreadParamsString string, unreadParamsCount int)
+	updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string)
 	getName() string
 	getNameNotOptional() string
 	isOptional() bool
@@ -137,42 +182,31 @@ type intParameter struct {
 	wasRead  bool
 }
 
-func (p *intParameter) updateMachine(machine *finiteStateMachine, unreadParamsString string, unreadParamsCount int) {
+func (p *intParameter) updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string) {
 	var (
 		state        = machine.nextState()
-		onEndState   stateType
-		onEndMessage string
+		convertError = "failed to convert the token to an integer when reading " + p.getName()
 	)
-	switch unreadParamsCount {
-	case 0:
-		onEndState = start
-		onEndMessage = ""
-	case 1:
-		onEndState = err
-		onEndMessage = "parameter " + unreadParamsString + " is not specified"
-	default:
-		onEndState = err
-		onEndMessage = "parameters " + unreadParamsString + " are not specified"
-	}
-	machine.newMatrixColumn(err, state, err, err, err, onEndState, onEndState, err, err)
-	machine.newErrorsColumn(
-		"invalid "+p.name+", excepted: INT, received: WORD",
-		"",
-		"invalid "+p.name+", excepted: INT, received: FLOAT",
-		"invalid "+p.name+", excepted: INT, received: SLASH",
-		"impossible token received when reading the "+p.name+" - SPACE",
-		onEndMessage,
-		onEndMessage,
-		"invalid "+p.name+", excepted: INT, received: UNKNOWN",
-		"impossible token received when reading the "+p.name+" - COMMENT",
-	)
-	var convertError = "failed to convert the token to an integer when reading " + p.name
-	machine.newAction(func(token string) {
-		var value, err = strconv.ParseInt(token, 10, 64)
-		if err != nil {
-			panic(convertError)
-		}
-		p.set(value)
+	machine.update(&machineRow{
+		matrixRow: [...]stateType{err, state, err, err, err, onEndState, onEndState, err, err},
+		action: func(token string) {
+			var value, err = strconv.ParseInt(token, 10, 64)
+			if err != nil {
+				panic(convertError)
+			}
+			p.set(value)
+		},
+		errorsRow: [...]string{
+			invalidParameterError(p, scanner.Integer, scanner.Word),
+			noErrorMassage,
+			invalidParameterError(p, scanner.Integer, scanner.Float),
+			invalidParameterError(p, scanner.Integer, scanner.Slash),
+			impossibleTokenWhenReadingParameterError(p, scanner.Space),
+			onEndMessage,
+			onEndMessage,
+			invalidParameterError(p, scanner.Integer, scanner.Unknown),
+			impossibleTokenWhenReadingParameterError(p, scanner.Comment),
+		},
 	})
 }
 
@@ -252,42 +286,31 @@ type floatParameter struct {
 	optional bool
 }
 
-func (p *floatParameter) updateMachine(machine *finiteStateMachine, unreadParamsString string, unreadParamsCount int) {
+func (p *floatParameter) updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string) {
 	var (
 		state        = machine.nextState()
-		onEndState   stateType
-		onEndMessage string
+		convertError = "failed to convert the token to a float when reading " + p.getName()
 	)
-	switch unreadParamsCount {
-	case 0:
-		onEndState = start
-		onEndMessage = ""
-	case 1:
-		onEndState = err
-		onEndMessage = "parameter " + unreadParamsString + " is not specified"
-	default:
-		onEndState = err
-		onEndMessage = "parameters " + unreadParamsString + " are not specified"
-	}
-	machine.newMatrixColumn(err, state, state, err, err, onEndState, onEndState, err, err)
-	machine.newErrorsColumn(
-		"invalid "+p.name+", excepted: FLOAT, received: WORD",
-		"",
-		"",
-		"invalid "+p.name+", excepted: FLOAT, received: SLASH",
-		"impossible token received when reading the "+p.name+" - SPACE",
-		onEndMessage,
-		onEndMessage,
-		"invalid "+p.name+", excepted: FLOAT, received: UNKNOWN",
-		"impossible token received when reading the "+p.name+" - COMMENT",
-	)
-	var convertError = "failed to convert the token to a float when reading " + p.name
-	machine.newAction(func(token string) {
-		var value, err = strconv.ParseFloat(token, 64)
-		if err != nil {
-			panic(convertError)
-		}
-		p.set(value)
+	machine.update(&machineRow{
+		matrixRow: [...]stateType{err, state, state, err, err, onEndState, onEndState, err, err},
+		action: func(token string) {
+			var value, err = strconv.ParseFloat(token, 64)
+			if err != nil {
+				panic(convertError)
+			}
+			p.set(value)
+		},
+		errorsRow: [...]string{
+			invalidParameterError(p, scanner.Float, scanner.Word),
+			noErrorMassage,
+			noErrorMassage,
+			invalidParameterError(p, scanner.Float, scanner.Slash),
+			impossibleTokenWhenReadingParameterError(p, scanner.Space),
+			onEndMessage,
+			onEndMessage,
+			invalidParameterError(p, scanner.Float, scanner.Unknown),
+			impossibleTokenWhenReadingParameterError(p, scanner.Comment),
+		},
 	})
 }
 
@@ -366,7 +389,7 @@ type stringParameter struct {
 	name  string
 }
 
-func (p *stringParameter) updateMachine(machine *finiteStateMachine, unreadParamsString string, unreadParamsCount int) {
+func (p *stringParameter) updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string) {
 	// todo stringParameter updateMachine
 }
 
@@ -433,7 +456,7 @@ type structParameter struct {
 	delimiter scanner.TokenType
 }
 
-func (p *structParameter) updateMachine(machine *finiteStateMachine, unreadParamsString string, unreadParamsCount int) {
+func (p *structParameter) updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string) {
 	// todo structParameter updateMachine
 }
 
@@ -605,7 +628,7 @@ type sliceParameter struct {
 	min   int
 }
 
-func (p *sliceParameter) updateMachine(machine *finiteStateMachine, unreadParamsString string, unreadParamsCount int) {
+func (p *sliceParameter) updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string) {
 	// todo sliceParameter updateMachine
 }
 
@@ -736,12 +759,12 @@ func buildParameters(v reflect.Value) []parameter {
 
 func buildParser(elementType ElementType, element interface{}) elementParser {
 	var (
-		value      = reflect.New(reflect.TypeOf(element)).Elem()
-		params     = buildParameters(value)
-		paramNames = make([]string, 0, len(params))
-		machine    = newFiniteStateMachine(value, elementType)
+		value       = reflect.New(reflect.TypeOf(element)).Elem()
+		params      = buildParameters(value)
+		paramNames  = make([]string, 0, len(params))
+		machine     = newFiniteStateMachine(value, elementType)
+		paramString string
 	)
-	var paramString string
 	for _, param := range params {
 		paramString = param.getNameNotOptional()
 		if paramString != "" {
@@ -749,76 +772,69 @@ func buildParser(elementType ElementType, element interface{}) elementParser {
 		}
 	}
 	var (
-		unreadParamsString string
-		unreadParamsCount  int
-		onEndState         stateType
-		onEndMessage       string
-		state              stateType
+		state             stateType
+		unreadParamsCount int
+		onEndState        stateType
+		onEndMessage      string
 	)
 	for i, param := range params {
-		if i >= len(paramNames) {
-			unreadParamsString = ""
-			unreadParamsCount = 0
+		unreadParamsCount = len(paramNames) - i - 1
+		if unreadParamsCount <= 0 {
+			onEndState = start
+			onEndMessage = noErrorMassage
 		} else {
-			unreadParamsString = strings.Join(paramNames[i+1:], ", ")
-			unreadParamsCount = len(paramNames) - i - 1
+			onEndState = err
+			onEndMessage = parametersNotSpecifiedError(strings.Join(paramNames[i+1:], ", "), unreadParamsCount)
 		}
-		param.updateMachine(machine, unreadParamsString, unreadParamsCount)
+		param.updateMachine(machine, onEndState, onEndMessage)
 		state = machine.nextState()
 		if i == len(params)-1 {
-			machine.newMatrixColumn(err, err, err, err, state, start, start, err, err)
-			machine.newErrorsColumn(
-				"impossible token received after reading the "+param.getName()+" - WORD",
-				"impossible token received after reading the "+param.getName()+" - INT",
-				"impossible token received after reading the "+param.getName()+" - FLOAT",
-				"unexpected token received after reading the "+param.getName()+" - SLASH",
-				"",
-				"",
-				"",
-				"impossible token received after reading the "+param.getName()+" - UNKNOWN",
-				"impossible token received after reading the "+param.getName()+" - COMMENT",
-			)
-			machine.newAction(func(token string) {})
-			machine.newMatrixColumn(err, err, err, err, err, start, start, err, err)
-			machine.newErrorsColumn(
-				"unexpected token received after describing a "+elementType.String()+" - WORD",
-				"unexpected token received after describing a "+elementType.String()+" - INT",
-				"unexpected token received after describing a "+elementType.String()+" - FLOAT",
-				"unexpected token received after describing a "+elementType.String()+" - SLASH",
-				"impossible token received after describing a "+elementType.String()+" - SPACE",
-				"",
-				"",
-				"unexpected token received after describing a "+elementType.String()+" - UNKNOWN",
-				"impossible token received after describing a "+elementType.String()+" - COMMENT",
-			)
-			machine.newAction(func(token string) {
-				panic("the action method cannot be called in a state from which transitions are made only to the start state and the err state")
+			machine.update(&machineRow{
+				matrixRow: [...]stateType{err, err, err, err, state, start, start, err, err},
+				action:    noAction,
+				errorsRow: [...]string{
+					impossibleTokenAfterReadingParameterError(param, scanner.Word),
+					impossibleTokenAfterReadingParameterError(param, scanner.Integer),
+					impossibleTokenAfterReadingParameterError(param, scanner.Float),
+					unexpectedTokenAfterReadingParameterError(param, scanner.Slash),
+					noErrorMassage,
+					noErrorMassage,
+					noErrorMassage,
+					impossibleTokenAfterReadingParameterError(param, scanner.Unknown),
+					impossibleTokenAfterReadingParameterError(param, scanner.Comment),
+				},
+			})
+			machine.update(&machineRow{
+				matrixRow: [...]stateType{err, err, err, err, err, start, start, err, err},
+				action:    lastStateAction,
+				errorsRow: [...]string{
+					unexpectedTokenAfterDescribingElementError(elementType, scanner.Word),
+					unexpectedTokenAfterDescribingElementError(elementType, scanner.Integer),
+					unexpectedTokenAfterDescribingElementError(elementType, scanner.Float),
+					unexpectedTokenAfterDescribingElementError(elementType, scanner.Slash),
+					unexpectedTokenAfterDescribingElementError(elementType, scanner.Space),
+					noErrorMassage,
+					noErrorMassage,
+					unexpectedTokenAfterDescribingElementError(elementType, scanner.Unknown),
+					impossibleTokenAfterDescribingElementError(elementType, scanner.Comment),
+				},
 			})
 		} else {
-			switch unreadParamsCount {
-			case 0:
-				onEndState = start
-				onEndMessage = ""
-			case 1:
-				onEndState = err
-				onEndMessage = "parameter " + unreadParamsString + " is not specified"
-			default:
-				onEndState = err
-				onEndMessage = "parameters " + unreadParamsString + " are not specified"
-			}
-			machine.newMatrixColumn(err, err, err, err, state, onEndState, onEndState, err, err)
-			machine.newErrorsColumn(
-				"impossible token received after reading the "+param.getName()+" - WORD",
-				"impossible token received after reading the "+param.getName()+" - INT",
-				"impossible token received after reading the "+param.getName()+" - FLOAT",
-				"invalid delimiter format between "+param.getName()+" and "+params[i+1].getName()+", expected: SPACE, received: SLASH",
-				"impossible token received after describing a "+elementType.String()+" - SPACE",
-				onEndMessage,
-				onEndMessage,
-				"impossible token received after reading the "+param.getName()+" - UNKNOWN",
-				"impossible token received after reading the "+param.getName()+" - COMMENT",
-			)
-			machine.newAction(func(token string) {})
+			machine.update(&machineRow{
+				matrixRow: [...]stateType{err, err, err, err, state, onEndState, onEndState, err, err},
+				action:    noAction,
+				errorsRow: [...]string{
+					impossibleTokenAfterReadingParameterError(param, scanner.Word),
+					impossibleTokenAfterReadingParameterError(param, scanner.Integer),
+					impossibleTokenAfterReadingParameterError(param, scanner.Float),
+					invalidDelimiterBetweenParametersError(param, params[i+1], scanner.Space, scanner.Slash),
+					impossibleTokenAfterDescribingElementError(elementType, scanner.Space),
+					onEndMessage,
+					onEndMessage,
+					impossibleTokenAfterReadingParameterError(param, scanner.Unknown),
+					impossibleTokenAfterReadingParameterError(param, scanner.Comment),
+				},
+			})
 		}
 	}
 	return machine
