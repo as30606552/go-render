@@ -8,35 +8,50 @@ import (
 	"strings"
 )
 
+// Error message constants.
 const (
 	noErrorMassage                = ""
 	parserUsedInErrorStateMessage = "parser cannot be used in the error state"
 )
 
+// Returns a string with a message about an impossible token received in the start state,
+// formatted with the received token.
 func impossibleTokenInStartStateError(tokenType scanner.TokenType) string {
 	return fmt.Sprintf("impossible token received in the start state - %s", tokenType)
 }
 
+// Returns a string with a message about an impossible token received when reading the parameter,
+// formatted with the received token and the parameter being read
 func impossibleTokenWhenReadingParameterError(param parameter, tokenType scanner.TokenType) string {
-	return fmt.Sprintf("impossible token received when reading the %s - %s", param.getName(), tokenType)
+	return fmt.Sprintf("impossible token received when reading the %s - %s", param, tokenType)
 }
 
+// Returns a string with a message about an impossible token received after reading the parameter,
+// formatted with the received token and the parameter being read
 func impossibleTokenAfterReadingParameterError(param parameter, tokenType scanner.TokenType) string {
-	return fmt.Sprintf("impossible token received after reading the %s - %s", param.getName(), tokenType)
+	return fmt.Sprintf("impossible token received after reading the %s - %s", param, tokenType)
 }
 
+// Returns a string with a message about an impossible token received after the element description,
+// formatted with the received token and the element being read
 func impossibleTokenAfterDescribingElementError(elementType ElementType, tokenType scanner.TokenType) string {
 	return fmt.Sprintf("impossible token received after describing a %s - %s", elementType, tokenType)
 }
 
+// Returns a string with a message about an unexpected token received after reading the parameter,
+// formatted with the received token and the parameter being read
 func unexpectedTokenAfterReadingParameterError(param parameter, tokenType scanner.TokenType) string {
-	return fmt.Sprintf("unexpected token received after reading the %s - %s", param.getName(), tokenType)
+	return fmt.Sprintf("unexpected token received after reading the %s - %s", param, tokenType)
 }
 
+// Returns a string with a message about an unexpected token received after the element description,
+// formatted with the received token and the element being read
 func unexpectedTokenAfterDescribingElementError(elementType ElementType, tokenType scanner.TokenType) string {
 	return fmt.Sprintf("unexpected token received after describing a %s - %s", elementType, tokenType)
 }
 
+// Returns a string with a message about parameters not specified in the description,
+// formatted with the parameter names, separated by commas, passed to the unreadParamsString.
 func parametersNotSpecifiedError(unreadParamsString string, unreadParamsCount int) string {
 	if unreadParamsCount == 1 {
 		return fmt.Sprintf("parameter %s is not specified", unreadParamsString)
@@ -45,47 +60,62 @@ func parametersNotSpecifiedError(unreadParamsString string, unreadParamsCount in
 	}
 }
 
-func notSpecifiedParametersOfElementTypeError(elementType ElementType) string {
+// Returns a string with a message that all parameters of the read element are not specified in the description,
+// formatted by the read element
+func allParametersNotSpecifiedError(elementType ElementType) string {
 	return fmt.Sprintf("not specified parameters of the %s", elementType)
 }
 
+// Returns a string with a message that the parameter is specified incorrectly,
+// formatted with the read parameter, the expected token and the received token
 func invalidParameterError(param parameter, expected, received scanner.TokenType) string {
-	return fmt.Sprintf("invalid %s, excepted: %s, received: %s", param.getName(), expected, received)
+	return fmt.Sprintf("invalid %s, excepted: %s, received: %s", param, expected, received)
 }
 
+// Returns a string with a message that the delimiter between the parameters is specified incorrectly,
+// formatted with these parameters, the expected token and the received token
 func invalidDelimiterBetweenParametersError(first, second parameter, expected, received scanner.TokenType) string {
 	return fmt.Sprintf(
 		"invalid delimiter format between %s and %s, expected: %s, received: %s",
-		first.getName(),
-		second.getName(),
+		first,
+		second,
 		expected,
 		received,
 	)
 }
 
+// The action performed with the token when the elementParser goes to the next state.
 type action func(token string)
 
 var (
+	// An action that does nothing.
+	// It is executed when the elementParser goes to the state of reading the separator between the parameters.
 	noAction         action = func(token string) {}
-	startStateAction        = func(token string) { panic("the action method is called in the err state") }
-	lastStateAction         = func(token string) {
+	startStateAction action = func(token string) { panic("the action method is called in the err state") }
+	lastStateAction  action = func(token string) {
 		panic("the action method cannot be called in a state from which transitions are made only to the start state and the err state")
 	}
 )
 
+// Contains complete information about a single state of the finite state machine.
+// Used to fill the finite state machine.
 type machineRow struct {
-	matrixRow [scanner.TokensCount]stateType
-	action    action
-	errorsRow [scanner.TokensCount]string
+	matrixRow [scanner.TokensCount]stateType // Information about transitions from this state.
+	action    action                         // The action that will be performed when switching to this state.
+	errorsRow [scanner.TokensCount]string    // Information about errors when transitioning from this state.
 }
 
+// Contains complete information about the finite state machine that implements the elementParser.
+// The transition to the next state is performed by extracting it from the state matrix.
 type finiteStateMachine struct {
-	element reflect.Value
-	matrix  [][scanner.TokensCount]stateType
-	actions []action
-	errors  [][scanner.TokensCount]string
+	element reflect.Value                    // A structure containing information about the element being read.
+	matrix  [][scanner.TokensCount]stateType // The transition matrix.
+	actions []action                         // An array of actions that are performed when transitioning to a certain state.
+	errors  [][scanner.TokensCount]string    // Array of error messages returned when transitioning to the err state.
 }
 
+// Clears the structure fields to read the new line.
+// Used in the start state.
 func (m *finiteStateMachine) clearElement() {
 	var field reflect.Value
 	for i := 0; i < m.element.NumField(); i++ {
@@ -97,37 +127,46 @@ func (m *finiteStateMachine) clearElement() {
 			field.SetFloat(0)
 		case reflect.String:
 			field.SetString("")
-			// todo add cleaning of structures and slices
+			// TODO add cleaning of structures and slices
 		}
 	}
 }
 
+// Returns the next state that is not yet used by the finite state machine.
 func (m *finiteStateMachine) nextState() stateType {
 	return stateType(len(m.matrix) + 1)
 }
 
+// Updates the finite state machine by adding a new state to it.
 func (m *finiteStateMachine) update(row *machineRow) {
 	m.matrix = append(m.matrix, row.matrixRow)
 	m.actions = append(m.actions, row.action)
 	m.errors = append(m.errors, row.errorsRow)
 }
 
+// Implementation of the next method in the elementParser interface.
 func (m *finiteStateMachine) next(tokenType scanner.TokenType, state stateType) stateType {
 	return m.matrix[state][tokenType]
 }
 
+// Implementation of the action method in the elementParser interface.
 func (m *finiteStateMachine) action(state stateType, token string) {
 	m.actions[state](token)
 }
 
+// Implementation of the message method in the elementParser interface.
 func (m *finiteStateMachine) message(tokenType scanner.TokenType, state stateType) string {
 	return m.errors[state][tokenType]
 }
 
+// Implementation of the result method in the elementParser interface.
 func (m *finiteStateMachine) result() interface{} {
 	return m.element.Interface()
 }
 
+// Creates a new object of a finiteStateMachine.
+// Initializes fields and allocates memory.
+// Adds processing of the first two reserved states - the start state and the err state.
 func newFiniteStateMachine(element reflect.Value, elementType ElementType) *finiteStateMachine {
 	var m = finiteStateMachine{
 		element: element,
@@ -144,8 +183,8 @@ func newFiniteStateMachine(element reflect.Value, elementType ElementType) *fini
 			impossibleTokenInStartStateError(scanner.Float),
 			impossibleTokenInStartStateError(scanner.Slash),
 			noErrorMassage,
-			notSpecifiedParametersOfElementTypeError(elementType),
-			notSpecifiedParametersOfElementTypeError(elementType),
+			allParametersNotSpecifiedError(elementType),
+			allParametersNotSpecifiedError(elementType),
 			impossibleTokenInStartStateError(scanner.Unknown),
 			impossibleTokenInStartStateError(scanner.Comment),
 		},
@@ -168,31 +207,34 @@ func newFiniteStateMachine(element reflect.Value, elementType ElementType) *fini
 	return &m
 }
 
+// Describes methods for updating a finite state machine based on a field from a structure.
 type parameter interface {
+	// Updates the finiteStateMachine to read the parameter.
+	// Since a particular parameter does not have information about the need to read other parameters,
+	// the information about the end-of-line transition must be passed from the outside.
 	updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string)
-	getName() string
-	getNameNotOptional() string
-	isOptional() bool
+	// Returns the parameter name read from the structure tags.
+	String() string
+	// Returns the name of the parameter, if it is required.
+	// For structures, returns a comma-separated list of required parameter names.
+	// For slices, returns the number of parameters to be read or a comma-separated list of required parameters.
+	requiredString() string
 }
 
 type intParameter struct {
 	value    reflect.Value
 	name     string
 	optional bool
-	wasRead  bool
 }
 
 func (p *intParameter) updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string) {
-	var (
-		state        = machine.nextState()
-		convertError = "failed to convert the token to an integer when reading " + p.getName()
-	)
+	var state = machine.nextState()
 	machine.update(&machineRow{
 		matrixRow: [...]stateType{err, state, err, err, err, onEndState, onEndState, err, err},
 		action: func(token string) {
 			var value, err = strconv.ParseInt(token, 10, 64)
 			if err != nil {
-				panic(convertError)
+				panic("failed to convert the token to an integer when reading " + p.String())
 			}
 			p.set(value)
 		},
@@ -210,20 +252,16 @@ func (p *intParameter) updateMachine(machine *finiteStateMachine, onEndState sta
 	})
 }
 
-func (p *intParameter) getName() string {
+func (p *intParameter) String() string {
 	return p.name
 }
 
-func (p *intParameter) getNameNotOptional() string {
+func (p *intParameter) requiredString() string {
 	if p.optional {
 		return ""
 	} else {
 		return p.name
 	}
-}
-
-func (p *intParameter) isOptional() bool {
-	return p.optional
 }
 
 func (p intParameter) set(value int64) {
@@ -287,16 +325,13 @@ type floatParameter struct {
 }
 
 func (p *floatParameter) updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string) {
-	var (
-		state        = machine.nextState()
-		convertError = "failed to convert the token to a float when reading " + p.getName()
-	)
+	var state = machine.nextState()
 	machine.update(&machineRow{
 		matrixRow: [...]stateType{err, state, state, err, err, onEndState, onEndState, err, err},
 		action: func(token string) {
 			var value, err = strconv.ParseFloat(token, 64)
 			if err != nil {
-				panic(convertError)
+				panic("failed to convert the token to a float when reading " + p.String())
 			}
 			p.set(value)
 		},
@@ -314,20 +349,16 @@ func (p *floatParameter) updateMachine(machine *finiteStateMachine, onEndState s
 	})
 }
 
-func (p *floatParameter) getName() string {
+func (p *floatParameter) String() string {
 	return p.name
 }
 
-func (p *floatParameter) getNameNotOptional() string {
+func (p *floatParameter) requiredString() string {
 	if p.optional {
 		return ""
 	} else {
 		return p.name
 	}
-}
-
-func (p *floatParameter) isOptional() bool {
-	return p.optional
 }
 
 func (p floatParameter) set(value float64) {
@@ -390,19 +421,15 @@ type stringParameter struct {
 }
 
 func (p *stringParameter) updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string) {
-	// todo stringParameter updateMachine
+	// TODO implement updateMachine for stringParameter
 }
 
-func (p *stringParameter) getName() string {
+func (p *stringParameter) String() string {
 	return p.name
 }
 
-func (p *stringParameter) getNameNotOptional() string {
+func (p *stringParameter) requiredString() string {
 	return p.name
-}
-
-func (p *stringParameter) isOptional() bool {
-	return false
 }
 
 func (p stringParameter) set(value string) {
@@ -450,6 +477,7 @@ func newSliceStringParameter(field reflect.StructField, value reflect.Value) *st
 	return &p
 }
 
+// TODO optimize the fields for a more convenient update of the finite state machine
 type structParameter struct {
 	name      string
 	params    []parameter
@@ -457,24 +485,15 @@ type structParameter struct {
 }
 
 func (p *structParameter) updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string) {
-	// todo structParameter updateMachine
+	// TODO implement updateMachine for structParameter
 }
 
-func (p *structParameter) getName() string {
+func (p *structParameter) String() string {
 	return p.name
 }
 
-func (p *structParameter) getNameNotOptional() string {
+func (p *structParameter) requiredString() string {
 	return p.name
-}
-
-func (p *structParameter) isOptional() bool {
-	for _, param := range p.params {
-		if param.isOptional() {
-			return true
-		}
-	}
-	return false
 }
 
 func newStructStructParameter(field reflect.StructField, value reflect.Value) *structParameter {
@@ -511,39 +530,40 @@ func newStructStructParameter(field reflect.StructField, value reflect.Value) *s
 	}
 	p.params = make([]parameter, 0, 5)
 	var (
-		f        reflect.StructField
-		optional = false
-		param    parameter
+		f          reflect.StructField
+		optional   = false
+		intParam   *intParameter
+		floatParam *floatParameter
 	)
 	for i := 0; i < t.NumField(); i++ {
 		f = t.Field(i)
 		switch f.Type.Kind() {
 		case reflect.Int:
-			param = newStructIntParameter(f, value.Field(i))
-			if i == 0 && param.isOptional() {
+			intParam = newStructIntParameter(f, value.Field(i))
+			if i == 0 && intParam.optional {
 				panic("the first field of the structure cannot be optional")
 			}
-			if p.delimiter == scanner.Space && param.isOptional() {
+			if p.delimiter == scanner.Space && intParam.optional {
 				panic("a field of the struct type with a space delimiter cannot contain optional fields")
 			}
-			if optional && !param.isOptional() {
+			if optional && !intParam.optional {
 				panic("an optional field cannot be followed by a required field")
 			}
-			optional = param.isOptional()
-			p.params = append(p.params, param)
+			optional = intParam.optional
+			p.params = append(p.params, intParam)
 		case reflect.Float64:
-			param = newStructFloatParameter(f, value.Field(i))
-			if i == 0 && param.isOptional() {
+			floatParam = newStructFloatParameter(f, value.Field(i))
+			if i == 0 && floatParam.optional {
 				panic("the first field of the structure cannot be optional")
 			}
-			if p.delimiter == scanner.Space && param.isOptional() {
+			if p.delimiter == scanner.Space && floatParam.optional {
 				panic("a field of the struct type with a space delimiter cannot contain optional fields")
 			}
-			if optional && !param.isOptional() {
+			if optional && !floatParam.optional {
 				panic("an optional field cannot be followed by a required field")
 			}
-			optional = param.isOptional()
-			p.params = append(p.params, param)
+			optional = floatParam.optional
+			p.params = append(p.params, floatParam)
 		default:
 			panic("unsupported type of structure field that is a struct field: " + f.Type.Kind().String())
 		}
@@ -582,39 +602,40 @@ func newSliceStructParameter(field reflect.StructField, value reflect.Value) *st
 	}
 	p.params = make([]parameter, 0, 5)
 	var (
-		f        reflect.StructField
-		optional = false
-		param    parameter
+		f          reflect.StructField
+		optional   = false
+		intParam   *intParameter
+		floatParam *floatParameter
 	)
 	for i := 0; i < t.NumField(); i++ {
 		f = t.Field(i)
 		switch f.Type.Kind() {
 		case reflect.Int:
-			param = newStructIntParameter(f, value.Field(i))
-			if i == 0 && param.isOptional() {
+			intParam = newStructIntParameter(f, value.Field(i))
+			if i == 0 && intParam.optional {
 				panic("the first field of the structure cannot be optional")
 			}
-			if p.delimiter == scanner.Space && param.isOptional() {
+			if p.delimiter == scanner.Space && intParam.optional {
 				panic("a field of the struct type with a space delimiter cannot contain optional fields")
 			}
-			if optional && !param.isOptional() {
+			if optional && !intParam.optional {
 				panic("an optional field cannot be followed by a required field")
 			}
-			optional = param.isOptional()
-			p.params = append(p.params, param)
+			optional = intParam.optional
+			p.params = append(p.params, intParam)
 		case reflect.Float64:
-			param = newStructFloatParameter(f, value.Field(i))
-			if i == 0 && param.isOptional() {
+			floatParam = newStructFloatParameter(f, value.Field(i))
+			if i == 0 && floatParam.optional {
 				panic("the first field of the structure cannot be optional")
 			}
-			if p.delimiter == scanner.Space && param.isOptional() {
+			if p.delimiter == scanner.Space && floatParam.optional {
 				panic("a field of the struct type with a space delimiter cannot contain optional fields")
 			}
-			if optional && !param.isOptional() {
+			if optional && !floatParam.optional {
 				panic("an optional field cannot be followed by a required field")
 			}
-			optional = param.isOptional()
-			p.params = append(p.params, param)
+			optional = floatParam.optional
+			p.params = append(p.params, floatParam)
 		default:
 			panic("unsupported type of structure field that is a slice of struct field: " + f.Type.Kind().String())
 		}
@@ -622,6 +643,7 @@ func newSliceStructParameter(field reflect.StructField, value reflect.Value) *st
 	return &p
 }
 
+// TODO optimize the fields for a more convenient update of the finite state machine
 type sliceParameter struct {
 	value reflect.Value
 	param parameter
@@ -629,27 +651,22 @@ type sliceParameter struct {
 }
 
 func (p *sliceParameter) updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string) {
-	// todo sliceParameter updateMachine
+	// TODO implement updateMachine for sliceParameter
 }
 
-func (p *sliceParameter) getName() string {
-	var paramName = p.param.getName()
+func (p *sliceParameter) String() string {
 	switch p.min {
 	case 1:
-		return paramName
+		return p.param.String()
 	case 2:
-		return "first " + paramName + " and second " + paramName
+		return fmt.Sprintf("first %s and second %s", p.param, p.param)
 	default:
-		return strconv.Itoa(p.min) + " " + paramName + " values"
+		return fmt.Sprintf("%d %s values", p.min, p.param)
 	}
 }
 
-func (p *sliceParameter) getNameNotOptional() string {
-	return p.getName()
-}
-
-func (p *sliceParameter) isOptional() bool {
-	return false
+func (p *sliceParameter) requiredString() string {
+	return p.String()
 }
 
 func (p sliceParameter) new() reflect.Value {
@@ -691,6 +708,7 @@ func newSliceParameter(field reflect.StructField, value reflect.Value) *slicePar
 	return &p
 }
 
+// Converts a structure object to a slice of parameters that parse this object from a line.
 func buildParameters(v reflect.Value) []parameter {
 	var t = v.Type()
 	if t.Kind() != reflect.Struct {
@@ -700,34 +718,35 @@ func buildParameters(v reflect.Value) []parameter {
 		panic("the parser cannot be built on a structure without fields")
 	}
 	var (
-		params   = make([]parameter, 0, 5)
-		field    reflect.StructField
-		optional = false
-		param    parameter
+		params     = make([]parameter, 0, 5)
+		field      reflect.StructField
+		optional   = false
+		intParam   *intParameter
+		floatParam *floatParameter
 	)
 	for i := 0; i < t.NumField(); i++ {
 		field = t.Field(i)
 		switch field.Type.Kind() {
 		case reflect.Int:
-			param = newStructIntParameter(field, v.Field(i))
-			if i == 0 && param.isOptional() {
+			intParam = newStructIntParameter(field, v.Field(i))
+			if i == 0 && intParam.optional {
 				panic("the first field of the structure cannot be optional")
 			}
-			if optional && !param.isOptional() {
+			if optional && !intParam.optional {
 				panic("an optional field cannot be followed by a required field")
 			}
-			optional = param.isOptional()
-			params = append(params, param)
+			optional = intParam.optional
+			params = append(params, intParam)
 		case reflect.Float64:
-			param = newStructFloatParameter(field, v.Field(i))
-			if i == 0 && param.isOptional() {
+			floatParam = newStructFloatParameter(field, v.Field(i))
+			if i == 0 && floatParam.optional {
 				panic("the first field of the structure cannot be optional")
 			}
-			if optional && !param.isOptional() {
+			if optional && !floatParam.optional {
 				panic("an optional field cannot be followed by a required field")
 			}
-			optional = param.isOptional()
-			params = append(params, param)
+			optional = floatParam.optional
+			params = append(params, floatParam)
 		case reflect.String:
 			if optional {
 				panic("an optional field cannot be followed by a required field")
@@ -737,11 +756,7 @@ func buildParameters(v reflect.Value) []parameter {
 			if optional {
 				panic("an optional field cannot be followed by a required field")
 			}
-			param = newStructStructParameter(field, v.Field(i))
-			if param.isOptional() && i != t.NumField()-1 {
-				panic("the structure containing the optional fields must be the last field")
-			}
-			params = append(params, param)
+			params = append(params, newStructStructParameter(field, v.Field(i)))
 		case reflect.Slice:
 			if i != t.NumField()-1 {
 				panic("the slice must be the last field of the structure")
@@ -757,6 +772,48 @@ func buildParameters(v reflect.Value) []parameter {
 	return params
 }
 
+// Creates an ElementParser that parses the line based on the structure.
+// elementType specifies the type of element to be read.
+// element specifies the structure on the basis of which fields the line will be read.
+// The structure to be read must match the element type.
+// The structure fields are extracted from the line in the order in which they are specified in the structure.
+//
+// The following limitations apply to the element:
+// 	* Only public fields will be parsed.
+// 	* The element must have the base type struct.
+// 	* Structure fields must have one of the following basic types: int, float64, string, struct, []int, []float64, []string, []struct.
+// 	* If the field is of the slice type, it must be the last one in the structure.
+// 	* If a field is of the structure type, its fields must be of the base type int or float64.
+//
+// To specify additional information about the fields, use the following tags:
+//
+// 	name
+//
+//	The exact name of the structure field (may contain spaces), used when displaying error information.
+//	If this tag is not specified, the name of the structure field will be used.
+//
+// 	optional
+//
+//	It can take the values 'true' or 'false'.
+//	Used to specify optional fields.
+//	Optional fields must be the last fields of the structure.
+// 	All fields in the structure cannot be optional.
+// 	This tag can only be specified for fields of type int and float64.
+// 	If the tag value is not specified, the field is processed as required (like optional="false").
+//	These rules also apply to nested structures (fields of the struct type).
+//
+// 	delimiter
+//
+//	It can take the values 'slash' or 'space'.
+// 	This tag must be specified for the struct, []struct types and cannot be specified for other types.
+// 	Used for reading structure field delimiters.
+// 	If a structure has a 'space' delimiter, it cannot contain optional fields.
+//
+// 	min
+//
+// 	It can only accept integer values that are greater than zero.
+// 	This tag must be specified for slices and cannot be specified for other types.
+// 	Used to specify the minimum number of slice elements.
 func buildParser(elementType ElementType, element interface{}) elementParser {
 	var (
 		value       = reflect.New(reflect.TypeOf(element)).Elem()
@@ -766,7 +823,7 @@ func buildParser(elementType ElementType, element interface{}) elementParser {
 		paramString string
 	)
 	for _, param := range params {
-		paramString = param.getNameNotOptional()
+		paramString = param.requiredString()
 		if paramString != "" {
 			paramNames = append(paramNames, paramString)
 		}
@@ -778,13 +835,13 @@ func buildParser(elementType ElementType, element interface{}) elementParser {
 		onEndMessage      string
 	)
 	for i, param := range params {
-		unreadParamsCount = len(paramNames) - i - 1
+		unreadParamsCount = len(paramNames) - i
 		if unreadParamsCount <= 0 {
 			onEndState = start
 			onEndMessage = noErrorMassage
 		} else {
 			onEndState = err
-			onEndMessage = parametersNotSpecifiedError(strings.Join(paramNames[i+1:], ", "), unreadParamsCount)
+			onEndMessage = parametersNotSpecifiedError(strings.Join(paramNames[i:], ", "), unreadParamsCount)
 		}
 		param.updateMachine(machine, onEndState, onEndMessage)
 		state = machine.nextState()
@@ -820,6 +877,14 @@ func buildParser(elementType ElementType, element interface{}) elementParser {
 				},
 			})
 		} else {
+			unreadParamsCount--
+			if unreadParamsCount <= 0 {
+				onEndState = start
+				onEndMessage = noErrorMassage
+			} else {
+				onEndState = err
+				onEndMessage = parametersNotSpecifiedError(strings.Join(paramNames[i+1:], ", "), unreadParamsCount)
+			}
 			machine.update(&machineRow{
 				matrixRow: [...]stateType{err, err, err, err, state, onEndState, onEndState, err, err},
 				action:    noAction,
