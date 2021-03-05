@@ -421,7 +421,22 @@ type stringParameter struct {
 }
 
 func (p *stringParameter) updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string) {
-	// TODO implement updateMachine for stringParameter
+	var state = machine.nextState()
+	machine.update(&machineRow{
+		matrixRow: [...]stateType{state, err, err, err, err, onEndState, onEndState, err, err},
+		action:    func(token string) { p.set(token) },
+		errorsRow: [...]string{
+			noErrorMassage,
+			invalidParameterError(p, scanner.Word, scanner.Integer),
+			invalidParameterError(p, scanner.Word, scanner.Float),
+			invalidParameterError(p, scanner.Word, scanner.Slash),
+			impossibleTokenWhenReadingParameterError(p, scanner.Space),
+			onEndMessage,
+			onEndMessage,
+			invalidParameterError(p, scanner.Word, scanner.Unknown),
+			impossibleTokenWhenReadingParameterError(p, scanner.Comment),
+		},
+	})
 }
 
 func (p *stringParameter) String() string {
