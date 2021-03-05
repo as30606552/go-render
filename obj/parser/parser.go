@@ -218,13 +218,15 @@ func NewParser(reader io.Reader) *Parser {
 	return &Parser{scanner: scanner.NewScanner(reader), Output: os.Stderr}
 }
 
+// Type of output message.
 type logType uint8
 
 const (
-	e logType = iota
-	w
+	e logType = iota // Error type.
+	w                // Warning type.
 )
 
+// Converts the output message type to its string representation.
 func (t logType) String() string {
 	switch t {
 	case e:

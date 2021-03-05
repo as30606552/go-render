@@ -89,7 +89,7 @@ type action func(token string)
 
 var (
 	// An action that does nothing.
-	// It is executed when the elementParser goes to the state of reading the separator between the parameters.
+	// It is executed when the elementParser goes to the state of reading the delimiter between the parameters.
 	noAction         action = func(token string) {}
 	startStateAction action = func(token string) { panic("the action method is called in the err state") }
 	lastStateAction  action = func(token string) {
@@ -793,9 +793,9 @@ func buildParameters(v reflect.Value) []parameter {
 // The structure to be read must match the element type.
 // The structure fields are extracted from the line in the order in which they are specified in the structure.
 //
-// The following limitations apply to the element:
-// 	* Only public fields will be parsed.
+// The following limitations apply to the structure:
 // 	* The element must have the base type struct.
+// 	* Only public fields will be parsed.
 // 	* Structure fields must have one of the following basic types: int, float64, string, struct, []int, []float64, []string, []struct.
 // 	* If the field is of the slice type, it must be the last one in the structure.
 // 	* If a field is of the structure type, its fields must be of the base type int or float64.
