@@ -264,7 +264,7 @@ func (p *intParameter) requiredString() string {
 	}
 }
 
-func (p intParameter) set(value int64) {
+func (p *intParameter) set(value int64) {
 	p.value.SetInt(value)
 }
 
@@ -451,7 +451,7 @@ func (p stringParameter) set(value string) {
 	p.value.SetString(value)
 }
 
-func newStructStringParameter(field reflect.StructField, value reflect.Value) *stringParameter {
+func newStringParameter(field reflect.StructField, value reflect.Value) *stringParameter {
 	var (
 		p    = stringParameter{value: value}
 		tags = field.Tag
@@ -469,25 +469,6 @@ func newStructStringParameter(field reflect.StructField, value reflect.Value) *s
 	}
 	if _, ok := tags.Lookup("min"); ok {
 		panic("the min tag cannot be set for a string field")
-	}
-	return &p
-}
-
-func newSliceStringParameter(field reflect.StructField, value reflect.Value) *stringParameter {
-	var (
-		p    = stringParameter{value: value}
-		tags = field.Tag
-	)
-	if name, ok := tags.Lookup("name"); ok {
-		p.name = name
-	} else {
-		p.name = field.Name
-	}
-	if _, ok := tags.Lookup("optional"); ok {
-		panic("the optional tag cannot be set for a slice of string field")
-	}
-	if _, ok := tags.Lookup("delimiter"); ok {
-		panic("the delimiter tag cannot be set for a slice of string field")
 	}
 	return &p
 }
@@ -713,8 +694,6 @@ func newSliceParameter(field reflect.StructField, value reflect.Value) *slicePar
 		p.param = newSliceIntParameter(field, p.new())
 	case reflect.Float64:
 		p.param = newSliceFloatParameter(field, p.new())
-	case reflect.String:
-		p.param = newSliceStringParameter(field, p.new())
 	case reflect.Struct:
 		p.param = newSliceStructParameter(field, p.new())
 	default:
@@ -766,7 +745,7 @@ func buildParameters(v reflect.Value) []parameter {
 			if optional {
 				panic("an optional field cannot be followed by a required field")
 			}
-			params = append(params, newStructStringParameter(field, v.Field(i)))
+			params = append(params, newStringParameter(field, v.Field(i)))
 		case reflect.Struct:
 			if optional {
 				panic("an optional field cannot be followed by a required field")
