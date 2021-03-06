@@ -10,49 +10,49 @@ import (
 
 // Error message constants.
 const (
-	noErrorMassage                = ""
+	noErrorMessage                = ""
 	parserUsedInErrorStateMessage = "parser cannot be used in the error state"
 )
 
 // Returns a string with a message about an impossible token received in the start state,
 // formatted with the received token.
-func impossibleTokenInStartStateError(tokenType scanner.TokenType) string {
+func impossibleTokenInStartStateMessage(tokenType scanner.TokenType) string {
 	return fmt.Sprintf("impossible token received in the start state - %s", tokenType)
 }
 
 // Returns a string with a message about an impossible token received when reading the parameter,
 // formatted with the received token and the parameter being read
-func impossibleTokenWhenReadingParameterError(param parameter, tokenType scanner.TokenType) string {
+func impossibleTokenWhenReadingParameterMessage(param parameter, tokenType scanner.TokenType) string {
 	return fmt.Sprintf("impossible token received when reading the %s - %s", param, tokenType)
 }
 
 // Returns a string with a message about an impossible token received after reading the parameter,
 // formatted with the received token and the parameter being read
-func impossibleTokenAfterReadingParameterError(param parameter, tokenType scanner.TokenType) string {
+func impossibleTokenAfterReadingParameterMessage(param parameter, tokenType scanner.TokenType) string {
 	return fmt.Sprintf("impossible token received after reading the %s - %s", param, tokenType)
 }
 
 // Returns a string with a message about an impossible token received after the element description,
 // formatted with the received token and the element being read
-func impossibleTokenAfterDescribingElementError(elementType ElementType, tokenType scanner.TokenType) string {
+func impossibleTokenAfterDescribingElementMessage(elementType ElementType, tokenType scanner.TokenType) string {
 	return fmt.Sprintf("impossible token received after describing a %s - %s", elementType, tokenType)
 }
 
 // Returns a string with a message about an unexpected token received after reading the parameter,
 // formatted with the received token and the parameter being read
-func unexpectedTokenAfterReadingParameterError(param parameter, tokenType scanner.TokenType) string {
+func unexpectedTokenAfterReadingParameterMessage(param parameter, tokenType scanner.TokenType) string {
 	return fmt.Sprintf("unexpected token received after reading the %s - %s", param, tokenType)
 }
 
 // Returns a string with a message about an unexpected token received after the element description,
 // formatted with the received token and the element being read
-func unexpectedTokenAfterDescribingElementError(elementType ElementType, tokenType scanner.TokenType) string {
+func unexpectedTokenAfterDescribingElementMessage(elementType ElementType, tokenType scanner.TokenType) string {
 	return fmt.Sprintf("unexpected token received after describing a %s - %s", elementType, tokenType)
 }
 
 // Returns a string with a message about parameters not specified in the description,
 // formatted with the parameter names, separated by commas, passed to the unreadParamsString.
-func parametersNotSpecifiedError(unreadParamsString string, unreadParamsCount int) string {
+func parametersNotSpecifiedMessage(unreadParamsString string, unreadParamsCount int) string {
 	if unreadParamsCount == 1 {
 		return fmt.Sprintf("parameter %s is not specified", unreadParamsString)
 	} else {
@@ -62,23 +62,23 @@ func parametersNotSpecifiedError(unreadParamsString string, unreadParamsCount in
 
 // Returns a string with a message that all parameters of the read element are not specified in the description,
 // formatted by the read element
-func allParametersNotSpecifiedError(elementType ElementType) string {
-	return fmt.Sprintf("not specified parameters of the %s", elementType)
+func allParametersNotSpecifiedMessage(elementType ElementType) string {
+	return fmt.Sprintf("all parameters of the %s are not specified", elementType)
 }
 
 // Returns a string with a message that the parameter is specified incorrectly,
 // formatted with the read parameter, the expected token and the received token
-func invalidParameterError(param parameter, expected, received scanner.TokenType) string {
+func invalidParameterMessage(param parameter, expected, received scanner.TokenType) string {
 	return fmt.Sprintf("invalid %s, excepted: %s, received: %s", param, expected, received)
 }
 
 // Returns a string with a message that the delimiter between the parameters is specified incorrectly,
 // formatted with these parameters, the expected token and the received token
-func invalidDelimiterBetweenParametersError(first, second parameter, expected, received scanner.TokenType) string {
+func invalidDelimiterBetweenParametersMessage(predecessor, successor parameter, expected, received scanner.TokenType) string {
 	return fmt.Sprintf(
 		"invalid delimiter format between %s and %s, expected: %s, received: %s",
-		first,
-		second,
+		predecessor,
+		successor,
 		expected,
 		received,
 	)
@@ -127,7 +127,7 @@ func (m *finiteStateMachine) clearElement() {
 			field.SetFloat(0)
 		case reflect.String:
 			field.SetString("")
-			// TODO add cleaning of structures and slices
+			// TODO issue: #7 add cleaning of structures and slices
 		}
 	}
 }
@@ -138,14 +138,14 @@ func (m *finiteStateMachine) nextState() stateType {
 }
 
 // Updates the finite state machine by adding a new state to it.
-func (m *finiteStateMachine) update(row *machineRow) {
+func (m *finiteStateMachine) insertRow(row *machineRow) {
 	m.matrix = append(m.matrix, row.matrixRow)
 	m.actions = append(m.actions, row.action)
 	m.errors = append(m.errors, row.errorsRow)
 }
 
 // Implementation of the next method in the elementParser interface.
-func (m *finiteStateMachine) next(tokenType scanner.TokenType, state stateType) stateType {
+func (m *finiteStateMachine) transition(tokenType scanner.TokenType, state stateType) stateType {
 	return m.matrix[state][tokenType]
 }
 
@@ -174,22 +174,22 @@ func newFiniteStateMachine(element reflect.Value, elementType ElementType) *fini
 		actions: make([]action, 0, 10),
 		errors:  make([][scanner.TokensCount]string, 0, 10),
 	}
-	m.update(&machineRow{
+	m.insertRow(&machineRow{
 		matrixRow: [...]stateType{err, err, err, err, 2, err, err, err, err},
 		action:    func(token string) { m.clearElement() },
 		errorsRow: [...]string{
-			impossibleTokenInStartStateError(scanner.Word),
-			impossibleTokenInStartStateError(scanner.Integer),
-			impossibleTokenInStartStateError(scanner.Float),
-			impossibleTokenInStartStateError(scanner.Slash),
-			noErrorMassage,
-			allParametersNotSpecifiedError(elementType),
-			allParametersNotSpecifiedError(elementType),
-			impossibleTokenInStartStateError(scanner.Unknown),
-			impossibleTokenInStartStateError(scanner.Comment),
+			impossibleTokenInStartStateMessage(scanner.Word),
+			impossibleTokenInStartStateMessage(scanner.Integer),
+			impossibleTokenInStartStateMessage(scanner.Float),
+			impossibleTokenInStartStateMessage(scanner.Slash),
+			noErrorMessage,
+			allParametersNotSpecifiedMessage(elementType),
+			allParametersNotSpecifiedMessage(elementType),
+			impossibleTokenInStartStateMessage(scanner.Unknown),
+			impossibleTokenInStartStateMessage(scanner.Comment),
 		},
 	})
-	m.update(&machineRow{
+	m.insertRow(&machineRow{
 		matrixRow: [...]stateType{err, err, err, err, err, err, err, err, err},
 		action:    startStateAction,
 		errorsRow: [...]string{
@@ -206,6 +206,15 @@ func newFiniteStateMachine(element reflect.Value, elementType ElementType) *fini
 	})
 	return &m
 }
+
+const (
+	name      = "name"
+	optional  = "optional"
+	delimiter = "delimiter"
+	min       = "min"
+	slash     = "slash"
+	space     = "space"
+)
 
 // Describes methods for updating a finite state machine based on a field from a structure.
 type parameter interface {
@@ -229,7 +238,7 @@ type intParameter struct {
 
 func (p *intParameter) updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string) {
 	var state = machine.nextState()
-	machine.update(&machineRow{
+	machine.insertRow(&machineRow{
 		matrixRow: [...]stateType{err, state, err, err, err, onEndState, onEndState, err, err},
 		action: func(token string) {
 			var value, err = strconv.ParseInt(token, 10, 64)
@@ -239,15 +248,15 @@ func (p *intParameter) updateMachine(machine *finiteStateMachine, onEndState sta
 			p.set(value)
 		},
 		errorsRow: [...]string{
-			invalidParameterError(p, scanner.Integer, scanner.Word),
-			noErrorMassage,
-			invalidParameterError(p, scanner.Integer, scanner.Float),
-			invalidParameterError(p, scanner.Integer, scanner.Slash),
-			impossibleTokenWhenReadingParameterError(p, scanner.Space),
+			invalidParameterMessage(p, scanner.Integer, scanner.Word),
+			noErrorMessage,
+			invalidParameterMessage(p, scanner.Integer, scanner.Float),
+			invalidParameterMessage(p, scanner.Integer, scanner.Slash),
+			impossibleTokenWhenReadingParameterMessage(p, scanner.Space),
 			onEndMessage,
 			onEndMessage,
-			invalidParameterError(p, scanner.Integer, scanner.Unknown),
-			impossibleTokenWhenReadingParameterError(p, scanner.Comment),
+			invalidParameterMessage(p, scanner.Integer, scanner.Unknown),
+			impossibleTokenWhenReadingParameterMessage(p, scanner.Comment),
 		},
 	})
 }
@@ -273,27 +282,24 @@ func newStructIntParameter(field reflect.StructField, value reflect.Value) *intP
 		p    = intParameter{value: value}
 		tags = field.Tag
 	)
-	if name, ok := tags.Lookup("name"); ok {
+	if name, ok := tags.Lookup(name); ok {
 		p.name = name
 	} else {
 		p.name = field.Name
 	}
-	if optional, ok := tags.Lookup("optional"); ok {
-		switch optional {
-		case "true":
-			p.optional = true
-		case "false":
-			p.optional = false
-		default:
+	if optional, ok := tags.Lookup(optional); ok {
+		var err error
+		p.optional, err = strconv.ParseBool(optional)
+		if err != nil {
 			panic("the optional tag must take the values 'true' or 'false'")
 		}
 	} else {
 		p.optional = false
 	}
-	if _, ok := tags.Lookup("delimiter"); ok {
+	if _, ok := tags.Lookup(delimiter); ok {
 		panic("the delimiter tag cannot be set for an int field")
 	}
-	if _, ok := tags.Lookup("min"); ok {
+	if _, ok := tags.Lookup(min); ok {
 		panic("the min tag cannot be set for an int field")
 	}
 	return &p
@@ -304,15 +310,15 @@ func newSliceIntParameter(field reflect.StructField, value reflect.Value) *intPa
 		p    = intParameter{value: value}
 		tags = field.Tag
 	)
-	if name, ok := tags.Lookup("name"); ok {
+	if name, ok := tags.Lookup(name); ok {
 		p.name = name
 	} else {
 		p.name = field.Name
 	}
-	if _, ok := tags.Lookup("optional"); ok {
+	if _, ok := tags.Lookup(optional); ok {
 		panic("the optional tag cannot be set for a slice of int field")
 	}
-	if _, ok := tags.Lookup("delimiter"); ok {
+	if _, ok := tags.Lookup(delimiter); ok {
 		panic("the delimiter tag cannot be set for a slice of int field")
 	}
 	return &p
@@ -326,7 +332,7 @@ type floatParameter struct {
 
 func (p *floatParameter) updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string) {
 	var state = machine.nextState()
-	machine.update(&machineRow{
+	machine.insertRow(&machineRow{
 		matrixRow: [...]stateType{err, state, state, err, err, onEndState, onEndState, err, err},
 		action: func(token string) {
 			var value, err = strconv.ParseFloat(token, 64)
@@ -336,15 +342,15 @@ func (p *floatParameter) updateMachine(machine *finiteStateMachine, onEndState s
 			p.set(value)
 		},
 		errorsRow: [...]string{
-			invalidParameterError(p, scanner.Float, scanner.Word),
-			noErrorMassage,
-			noErrorMassage,
-			invalidParameterError(p, scanner.Float, scanner.Slash),
-			impossibleTokenWhenReadingParameterError(p, scanner.Space),
+			invalidParameterMessage(p, scanner.Float, scanner.Word),
+			noErrorMessage,
+			noErrorMessage,
+			invalidParameterMessage(p, scanner.Float, scanner.Slash),
+			impossibleTokenWhenReadingParameterMessage(p, scanner.Space),
 			onEndMessage,
 			onEndMessage,
-			invalidParameterError(p, scanner.Float, scanner.Unknown),
-			impossibleTokenWhenReadingParameterError(p, scanner.Comment),
+			invalidParameterMessage(p, scanner.Float, scanner.Unknown),
+			impossibleTokenWhenReadingParameterMessage(p, scanner.Comment),
 		},
 	})
 }
@@ -370,27 +376,24 @@ func newStructFloatParameter(field reflect.StructField, value reflect.Value) *fl
 		p    = floatParameter{value: value}
 		tags = field.Tag
 	)
-	if name, ok := tags.Lookup("name"); ok {
+	if name, ok := tags.Lookup(name); ok {
 		p.name = name
 	} else {
 		p.name = field.Name
 	}
-	if optional, ok := tags.Lookup("optional"); ok {
-		switch optional {
-		case "true":
-			p.optional = true
-		case "false":
-			p.optional = false
-		default:
+	if optional, ok := tags.Lookup(optional); ok {
+		var err error
+		p.optional, err = strconv.ParseBool(optional)
+		if err != nil {
 			panic("the optional tag must take the values 'true' or 'false'")
 		}
 	} else {
 		p.optional = false
 	}
-	if _, ok := tags.Lookup("delimiter"); ok {
+	if _, ok := tags.Lookup(delimiter); ok {
 		panic("the delimiter tag cannot be set for a float64 field")
 	}
-	if _, ok := tags.Lookup("min"); ok {
+	if _, ok := tags.Lookup(min); ok {
 		panic("the min tag cannot be set for a float64 field")
 	}
 	return &p
@@ -401,15 +404,15 @@ func newSliceFloatParameter(field reflect.StructField, value reflect.Value) *flo
 		p    = floatParameter{value: value}
 		tags = field.Tag
 	)
-	if name, ok := tags.Lookup("name"); ok {
+	if name, ok := tags.Lookup(name); ok {
 		p.name = name
 	} else {
 		p.name = field.Name
 	}
-	if _, ok := tags.Lookup("optional"); ok {
+	if _, ok := tags.Lookup(optional); ok {
 		panic("the optional tag cannot be set for a slice of float64 field")
 	}
-	if _, ok := tags.Lookup("delimiter"); ok {
+	if _, ok := tags.Lookup(delimiter); ok {
 		panic("the delimiter tag cannot be set for a slice of float64 field")
 	}
 	return &p
@@ -422,19 +425,19 @@ type stringParameter struct {
 
 func (p *stringParameter) updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string) {
 	var state = machine.nextState()
-	machine.update(&machineRow{
+	machine.insertRow(&machineRow{
 		matrixRow: [...]stateType{state, err, err, err, err, onEndState, onEndState, err, err},
 		action:    func(token string) { p.set(token) },
 		errorsRow: [...]string{
-			noErrorMassage,
-			invalidParameterError(p, scanner.Word, scanner.Integer),
-			invalidParameterError(p, scanner.Word, scanner.Float),
-			invalidParameterError(p, scanner.Word, scanner.Slash),
-			impossibleTokenWhenReadingParameterError(p, scanner.Space),
+			noErrorMessage,
+			invalidParameterMessage(p, scanner.Word, scanner.Integer),
+			invalidParameterMessage(p, scanner.Word, scanner.Float),
+			invalidParameterMessage(p, scanner.Word, scanner.Slash),
+			impossibleTokenWhenReadingParameterMessage(p, scanner.Space),
 			onEndMessage,
 			onEndMessage,
-			invalidParameterError(p, scanner.Word, scanner.Unknown),
-			impossibleTokenWhenReadingParameterError(p, scanner.Comment),
+			invalidParameterMessage(p, scanner.Word, scanner.Unknown),
+			impossibleTokenWhenReadingParameterMessage(p, scanner.Comment),
 		},
 	})
 }
@@ -456,24 +459,24 @@ func newStringParameter(field reflect.StructField, value reflect.Value) *stringP
 		p    = stringParameter{value: value}
 		tags = field.Tag
 	)
-	if name, ok := tags.Lookup("name"); ok {
+	if name, ok := tags.Lookup(name); ok {
 		p.name = name
 	} else {
 		p.name = field.Name
 	}
-	if _, ok := tags.Lookup("optional"); ok {
+	if _, ok := tags.Lookup(optional); ok {
 		panic("the optional tag cannot be set for a string field")
 	}
-	if _, ok := tags.Lookup("delimiter"); ok {
+	if _, ok := tags.Lookup(delimiter); ok {
 		panic("the delimiter tag cannot be set for a string field")
 	}
-	if _, ok := tags.Lookup("min"); ok {
+	if _, ok := tags.Lookup(min); ok {
 		panic("the min tag cannot be set for a string field")
 	}
 	return &p
 }
 
-// TODO optimize the fields for a more convenient update of the finite state machine
+// TODO issue: #7 optimize the fields for a more convenient update of the finite state machine
 type structParameter struct {
 	name      string
 	params    []parameter
@@ -481,7 +484,7 @@ type structParameter struct {
 }
 
 func (p *structParameter) updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string) {
-	// TODO implement updateMachine for structParameter
+	// TODO issue: #7 implement updateMachine for structParameter
 }
 
 func (p *structParameter) String() string {
@@ -501,19 +504,19 @@ func newStructStructParameter(field reflect.StructField, value reflect.Value) *s
 		p    = structParameter{}
 		tags = field.Tag
 	)
-	if name, ok := tags.Lookup("name"); ok {
+	if name, ok := tags.Lookup(name); ok {
 		p.name = name
 	} else {
 		p.name = field.Name
 	}
-	if _, ok := tags.Lookup("optional"); ok {
+	if _, ok := tags.Lookup(optional); ok {
 		panic("the optional tag cannot be set for a struct field")
 	}
-	if delimiter, ok := tags.Lookup("delimiter"); ok {
+	if delimiter, ok := tags.Lookup(delimiter); ok {
 		switch delimiter {
-		case "slash":
+		case slash:
 			p.delimiter = scanner.Slash
-		case "space":
+		case space:
 			p.delimiter = scanner.Space
 		default:
 			panic("the delimiter tag must take the values 'space' or 'slash'")
@@ -521,7 +524,7 @@ func newStructStructParameter(field reflect.StructField, value reflect.Value) *s
 	} else {
 		panic("the structure field must have the delimiter tag specified")
 	}
-	if _, ok := tags.Lookup("min"); ok {
+	if _, ok := tags.Lookup(min); ok {
 		panic("the min tag cannot be set for a struct field")
 	}
 	p.params = make([]parameter, 0, 5)
@@ -576,19 +579,19 @@ func newSliceStructParameter(field reflect.StructField, value reflect.Value) *st
 		p    = structParameter{}
 		tags = field.Tag
 	)
-	if name, ok := tags.Lookup("name"); ok {
+	if name, ok := tags.Lookup(name); ok {
 		p.name = name
 	} else {
 		p.name = field.Name
 	}
-	if _, ok := tags.Lookup("optional"); ok {
+	if _, ok := tags.Lookup(optional); ok {
 		panic("the optional tag cannot be set for a slice of struct field")
 	}
-	if delimiter, ok := tags.Lookup("delimiter"); ok {
+	if delimiter, ok := tags.Lookup(delimiter); ok {
 		switch delimiter {
-		case "slash":
+		case slash:
 			p.delimiter = scanner.Slash
-		case "space":
+		case space:
 			p.delimiter = scanner.Space
 		default:
 			panic("the delimiter tag must take the values 'space' or 'slash'")
@@ -639,7 +642,7 @@ func newSliceStructParameter(field reflect.StructField, value reflect.Value) *st
 	return &p
 }
 
-// TODO optimize the fields for a more convenient update of the finite state machine
+// TODO issue: #7 optimize the fields for a more convenient update of the finite state machine
 type sliceParameter struct {
 	value reflect.Value
 	param parameter
@@ -647,7 +650,7 @@ type sliceParameter struct {
 }
 
 func (p *sliceParameter) updateMachine(machine *finiteStateMachine, onEndState stateType, onEndMessage string) {
-	// TODO implement updateMachine for sliceParameter
+	// TODO issue: #7 implement updateMachine for sliceParameter
 }
 
 func (p *sliceParameter) String() string {
@@ -676,7 +679,7 @@ func newSliceParameter(field reflect.StructField, value reflect.Value) *slicePar
 		tags = field.Tag
 		p    = sliceParameter{value: value}
 	)
-	if min, ok := tags.Lookup("min"); ok {
+	if min, ok := tags.Lookup(min); ok {
 		minInt, err := strconv.ParseUint(min, 10, 8)
 		if err != nil {
 			panic("error reading the min tag")
@@ -832,66 +835,66 @@ func buildParser(elementType ElementType, element interface{}) elementParser {
 		unreadParamsCount = len(paramNames) - i
 		if unreadParamsCount <= 0 {
 			onEndState = start
-			onEndMessage = noErrorMassage
+			onEndMessage = noErrorMessage
 		} else {
 			onEndState = err
-			onEndMessage = parametersNotSpecifiedError(strings.Join(paramNames[i:], ", "), unreadParamsCount)
+			onEndMessage = parametersNotSpecifiedMessage(strings.Join(paramNames[i:], ", "), unreadParamsCount)
 		}
 		param.updateMachine(machine, onEndState, onEndMessage)
 		state = machine.nextState()
-		if i == len(params)-1 {
-			machine.update(&machineRow{
-				matrixRow: [...]stateType{err, err, err, err, state, start, start, err, err},
-				action:    noAction,
-				errorsRow: [...]string{
-					impossibleTokenAfterReadingParameterError(param, scanner.Word),
-					impossibleTokenAfterReadingParameterError(param, scanner.Integer),
-					impossibleTokenAfterReadingParameterError(param, scanner.Float),
-					unexpectedTokenAfterReadingParameterError(param, scanner.Slash),
-					noErrorMassage,
-					noErrorMassage,
-					noErrorMassage,
-					impossibleTokenAfterReadingParameterError(param, scanner.Unknown),
-					impossibleTokenAfterReadingParameterError(param, scanner.Comment),
-				},
-			})
-			machine.update(&machineRow{
-				matrixRow: [...]stateType{err, err, err, err, err, start, start, err, err},
-				action:    lastStateAction,
-				errorsRow: [...]string{
-					unexpectedTokenAfterDescribingElementError(elementType, scanner.Word),
-					unexpectedTokenAfterDescribingElementError(elementType, scanner.Integer),
-					unexpectedTokenAfterDescribingElementError(elementType, scanner.Float),
-					unexpectedTokenAfterDescribingElementError(elementType, scanner.Slash),
-					unexpectedTokenAfterDescribingElementError(elementType, scanner.Space),
-					noErrorMassage,
-					noErrorMassage,
-					unexpectedTokenAfterDescribingElementError(elementType, scanner.Unknown),
-					impossibleTokenAfterDescribingElementError(elementType, scanner.Comment),
-				},
-			})
-		} else {
+		if i != len(params)-1 {
 			unreadParamsCount--
 			if unreadParamsCount <= 0 {
 				onEndState = start
-				onEndMessage = noErrorMassage
+				onEndMessage = noErrorMessage
 			} else {
 				onEndState = err
-				onEndMessage = parametersNotSpecifiedError(strings.Join(paramNames[i+1:], ", "), unreadParamsCount)
+				onEndMessage = parametersNotSpecifiedMessage(strings.Join(paramNames[i+1:], ", "), unreadParamsCount)
 			}
-			machine.update(&machineRow{
+			machine.insertRow(&machineRow{
 				matrixRow: [...]stateType{err, err, err, err, state, onEndState, onEndState, err, err},
 				action:    noAction,
 				errorsRow: [...]string{
-					impossibleTokenAfterReadingParameterError(param, scanner.Word),
-					impossibleTokenAfterReadingParameterError(param, scanner.Integer),
-					impossibleTokenAfterReadingParameterError(param, scanner.Float),
-					invalidDelimiterBetweenParametersError(param, params[i+1], scanner.Space, scanner.Slash),
-					impossibleTokenAfterDescribingElementError(elementType, scanner.Space),
+					impossibleTokenAfterReadingParameterMessage(param, scanner.Word),
+					impossibleTokenAfterReadingParameterMessage(param, scanner.Integer),
+					impossibleTokenAfterReadingParameterMessage(param, scanner.Float),
+					invalidDelimiterBetweenParametersMessage(param, params[i+1], scanner.Space, scanner.Slash),
+					impossibleTokenAfterDescribingElementMessage(elementType, scanner.Space),
 					onEndMessage,
 					onEndMessage,
-					impossibleTokenAfterReadingParameterError(param, scanner.Unknown),
-					impossibleTokenAfterReadingParameterError(param, scanner.Comment),
+					impossibleTokenAfterReadingParameterMessage(param, scanner.Unknown),
+					impossibleTokenAfterReadingParameterMessage(param, scanner.Comment),
+				},
+			})
+		} else {
+			machine.insertRow(&machineRow{
+				matrixRow: [...]stateType{err, err, err, err, state, start, start, err, err},
+				action:    noAction,
+				errorsRow: [...]string{
+					impossibleTokenAfterReadingParameterMessage(param, scanner.Word),
+					impossibleTokenAfterReadingParameterMessage(param, scanner.Integer),
+					impossibleTokenAfterReadingParameterMessage(param, scanner.Float),
+					unexpectedTokenAfterReadingParameterMessage(param, scanner.Slash),
+					noErrorMessage,
+					noErrorMessage,
+					noErrorMessage,
+					impossibleTokenAfterReadingParameterMessage(param, scanner.Unknown),
+					impossibleTokenAfterReadingParameterMessage(param, scanner.Comment),
+				},
+			})
+			machine.insertRow(&machineRow{
+				matrixRow: [...]stateType{err, err, err, err, err, start, start, err, err},
+				action:    lastStateAction,
+				errorsRow: [...]string{
+					unexpectedTokenAfterDescribingElementMessage(elementType, scanner.Word),
+					unexpectedTokenAfterDescribingElementMessage(elementType, scanner.Integer),
+					unexpectedTokenAfterDescribingElementMessage(elementType, scanner.Float),
+					unexpectedTokenAfterDescribingElementMessage(elementType, scanner.Slash),
+					unexpectedTokenAfterDescribingElementMessage(elementType, scanner.Space),
+					noErrorMessage,
+					noErrorMessage,
+					unexpectedTokenAfterDescribingElementMessage(elementType, scanner.Unknown),
+					impossibleTokenAfterDescribingElementMessage(elementType, scanner.Comment),
 				},
 			})
 		}

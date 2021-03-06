@@ -188,7 +188,7 @@ const (
 // See the parsersRegistry documentation for more information.
 type elementParser interface {
 	// Returns the next state of the state machine based on the previous state and the received token type.
-	next(tokenType scanner.TokenType, state stateType) stateType
+	transition(tokenType scanner.TokenType, state stateType) stateType
 	// Performs the necessary actions on the received token when switching to the state.
 	action(state stateType, token string)
 	// Returns information about the error by the state from which the elementParser went to the err state
@@ -243,9 +243,7 @@ func (t logType) String() string {
 // After that, it outputs the line where the token occurred, highlighting the token.
 // Note that the method skips a line and adds information about it to the msg parameter.
 func (parser *Parser) log(msg, token string, t logType) {
-	if t == e && parser.IgnoreErrors || t == w && parser.IgnoreWarnings {
-		parser.scanner.SkipLine()
-	} else {
+	if !(t == e && parser.IgnoreErrors || t == w && parser.IgnoreWarnings) {
 		var (
 			tokenLength   int
 			logTypeString = t.String()
@@ -281,6 +279,8 @@ func (parser *Parser) log(msg, token string, t logType) {
 			strings.Repeat(" ", column+len(logTypeString)+3),
 			strings.Repeat("^", tokenLength),
 		)
+	} else {
+		parser.scanner.SkipLine()
 	}
 }
 
@@ -311,7 +311,7 @@ func (parser *Parser) Next() (ElementType, interface{}) {
 			for {
 				tokenType, token = parser.scanner.Next()
 				prevState = state
-				state = p.next(tokenType, prevState)
+				state = p.transition(tokenType, prevState)
 				switch state {
 				// The transition to the start state means the successful completion of the parser.
 				case start:

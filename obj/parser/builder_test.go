@@ -62,7 +62,7 @@ func TestBuildParameters(t *testing.T) {
 	if !stringParam.value.CanSet() {
 		t.Errorf("The parameter %s cannot change its field", stringParam.String())
 	}
-	// TODO add validation of the structure and slice parameters builder
+	// TODO issue: #7 add validation of the structure and slice parameters builder
 }
 
 func TestBuildParser_vertex(t *testing.T) {
@@ -99,8 +99,8 @@ func TestBuildParser_vertex(t *testing.T) {
 	}
 	if !correct {
 		t.Log("got: ", got)
-		t.Log("want:", want)
+		t.Log("want: ", want)
 	}
 }
 
-// TODO add a test for an element containing a slice of structures (for example, for Face)
+// TODO issue: #7 add a test for an element containing a slice of structures (for example, for Face)
