@@ -3,72 +3,42 @@ package parser
 import (
 	"computer_graphics/obj/scanner"
 	"computer_graphics/obj/types"
-	"reflect"
 	"testing"
 )
 
-func TestBuildParameters(t *testing.T) {
-	var s = &struct {
-		A           int `name:"integer" optional:"false"`
-		Field2      float64
-		Field3      string `name:"string"`
-		StructField struct {
-			Sf1 int `name:"inner struct field 1"`
-			Sf2 int `name:"inner struct field 2"`
-		} `delimiter:"space" name:"inner struct"`
-		SliceField []struct {
-			Ssf1 float64 `name:"inner slice field 1"`
-			Ssf2 int     `name:"inner slice field 2" optional:"true"`
-			Ssf3 float64 `name:"inner slice field 3" optional:"true"`
-		} `delimiter:"slash" min:"3" name:"slice of struct"`
-	}{}
-	var params = buildParameters(reflect.ValueOf(s).Elem())
-	if len(params) != 5 {
-		t.Fatalf("Invalid number of parameters, got: %d, want: %d", len(params), 5)
+func testParser(parser elementParser, want [][scanner.TokensCount]stateType, t *testing.T) {
+	var (
+		got     = parser.(*finiteStateMachine).matrix
+		gotDim  = len(got)
+		wantDim = len(want)
+	)
+	if gotDim != wantDim {
+		t.Fatalf("Incorrect dimension of the matrix, got: %d, want: %d", gotDim, wantDim)
 	}
-	var intParam = params[0].(*intParameter)
-	if intParam.name != "integer" {
-		t.Errorf("The parameter name was parsed incorrectly, got: %s, want: %s", intParam.name, "integer")
+	var correct = true
+	for i := 0; i < gotDim; i++ {
+		for j := 0; j < scanner.TokensCount; j++ {
+			if got[i][j] != want[i][j] {
+				t.Errorf(
+					"Invalid matrix element (%d, %s), got: %d, want: %d",
+					i,
+					scanner.TokenType(j),
+					got[i][j],
+					want[i][j],
+				)
+				correct = false
+			}
+		}
 	}
-	if intParam.optional != false {
-		t.Errorf("The parameter tag optional was parsed incorrectly, got: %t, want: %t", intParam.optional, false)
+	if !correct {
+		t.Log("got:  ", got)
+		t.Log("want: ", want)
 	}
-	if intParam.value.Kind() != reflect.Int {
-		t.Errorf("The parameter refers to an invalid value type, got: %s, want: %s", intParam.value.Kind(), reflect.Int)
-	}
-	if !intParam.value.CanSet() {
-		t.Errorf("The parameter %s cannot change its field", intParam.name)
-	}
-	var floatParam = params[1].(*floatParameter)
-	if floatParam.name != "Field2" {
-		t.Errorf("The parameter name was parsed incorrectly, got: %s, want: %s", floatParam.name, "Field2")
-	}
-	if floatParam.optional != false {
-		t.Errorf("The parameter tag optional was parsed incorrectly, got: %t, want: %t", floatParam.optional, false)
-	}
-	if floatParam.value.Kind() != reflect.Float64 {
-		t.Errorf("The parameter refers to an invalid value type, got: %s, want: %s", floatParam.value.Kind(), reflect.Float64)
-	}
-	if !floatParam.value.CanSet() {
-		t.Errorf("The parameter %s cannot change its field", floatParam.String())
-	}
-	var stringParam = params[2].(*stringParameter)
-	if stringParam.name != "string" {
-		t.Errorf("The parameter name was parsed incorrectly, got: %s, want: %s", stringParam.name, "string")
-	}
-	if stringParam.value.Kind() != reflect.String {
-		t.Errorf("The parameter refers to an invalid value type, got: %s, want: %s", stringParam.value.Kind(), reflect.String)
-	}
-	if !stringParam.value.CanSet() {
-		t.Errorf("The parameter %s cannot change its field", stringParam.String())
-	}
-	// TODO issue: #7 add validation of the structure and slice parameters builder
 }
 
 func TestBuildParser_vertex(t *testing.T) {
 	var (
-		parser = buildParser(Vertex, types.Vertex{})
-		got    = parser.(*finiteStateMachine).matrix
+		parser = buildParser(Vertex, types.NewVertex())
 		want   = [][scanner.TokensCount]stateType{
 			{1, 1, 1, 1, 2, 1, 1, 1, 1},
 			{1, 1, 1, 1, 1, 1, 1, 1, 1},
@@ -82,25 +52,95 @@ func TestBuildParser_vertex(t *testing.T) {
 			{1, 1, 1, 1, 10, 0, 0, 1, 1},
 			{1, 1, 1, 1, 1, 0, 0, 1, 1},
 		}
-		gotDim  = len(got)
-		wantDim = len(want)
 	)
-	if gotDim != wantDim {
-		t.Fatalf("Incorrect dimension of the matrix, got: %d, want: %d", gotDim, wantDim)
-	}
-	var correct = true
-	for i := 0; i < gotDim; i++ {
-		for j := 0; j < scanner.TokensCount; j++ {
-			if got[i][j] != want[i][j] {
-				t.Errorf("Invalid matrix element (%d, %d), got: %d, want: %d", i, j, got[i][j], want[i][j])
-				correct = false
-			}
-		}
-	}
-	if !correct {
-		t.Log("got: ", got)
-		t.Log("want: ", want)
-	}
+	testParser(parser, want, t)
 }
 
-// TODO issue: #7 add a test for an element containing a slice of structures (for example, for Face)
+func TestBuildParser_point(t *testing.T) {
+	var (
+		parser = buildParser(Point, types.NewPoint())
+		want   = [][scanner.TokensCount]stateType{
+			{1, 1, 1, 1, 2, 1, 1, 1, 1},
+			{1, 1, 1, 1, 1, 1, 1, 1, 1},
+			{1, 3, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 1, 4, 1, 1, 1, 1},
+			{1, 5, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 1, 6, 1, 1, 1, 1},
+			{1, 7, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 1, 8, 0, 0, 1, 1},
+			{1, 9, 1, 1, 1, 0, 0, 1, 1},
+			{1, 1, 1, 1, 8, 0, 0, 1, 1},
+		}
+	)
+	testParser(parser, want, t)
+}
+
+func TestBuildParser_face(t *testing.T) {
+	var (
+		parser = buildParser(Face, types.NewFace())
+		want   = [][scanner.TokensCount]stateType{
+			{1, 1, 1, 1, 2, 1, 1, 1, 1},
+			{1, 1, 1, 1, 1, 1, 1, 1, 1},
+			{1, 3, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 4, 55, 1, 1, 1, 1},
+			{1, 5, 1, 38, 1, 1, 1, 1, 1},
+			{1, 1, 1, 6, 26, 1, 1, 1, 1},
+			{1, 7, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 1, 8, 1, 1, 1, 1},
+			{1, 9, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 10, 1, 1, 1, 1, 1},
+			{1, 11, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 12, 1, 1, 1, 1, 1},
+			{1, 13, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 1, 14, 1, 1, 1, 1},
+			{1, 15, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 16, 1, 1, 1, 1, 1},
+			{1, 17, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 18, 1, 1, 1, 1, 1},
+			{1, 19, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 1, 20, 0, 0, 1, 1},
+			{1, 21, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 22, 1, 1, 1, 1, 1},
+			{1, 23, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 24, 1, 1, 1, 1, 1},
+			{1, 25, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 1, 20, 0, 0, 1, 1},
+			{1, 27, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 28, 1, 1, 1, 1, 1},
+			{1, 29, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 1, 30, 1, 1, 1, 1},
+			{1, 31, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 32, 1, 1, 1, 1, 1},
+			{1, 33, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 1, 34, 0, 0, 1, 1},
+			{1, 35, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 36, 1, 1, 1, 1, 1},
+			{1, 37, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 1, 34, 0, 0, 1, 1},
+			{1, 39, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 1, 40, 1, 1, 1, 1},
+			{1, 41, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 42, 1, 1, 1, 1, 1},
+			{1, 1, 1, 43, 1, 1, 1, 1, 1},
+			{1, 44, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 1, 45, 1, 1, 1, 1},
+			{1, 46, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 47, 1, 1, 1, 1, 1},
+			{1, 1, 1, 48, 1, 1, 1, 1, 1},
+			{1, 49, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 1, 50, 0, 0, 1, 1},
+			{1, 51, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 52, 1, 1, 1, 1, 1},
+			{1, 1, 1, 53, 1, 1, 1, 1, 1},
+			{1, 54, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 1, 50, 0, 0, 1, 1},
+			{1, 56, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 1, 57, 1, 1, 1, 1},
+			{1, 58, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 1, 59, 0, 0, 1, 1},
+			{1, 60, 1, 1, 1, 1, 1, 1, 1},
+			{1, 1, 1, 1, 59, 0, 0, 1, 1},
+		}
+	)
+	testParser(parser, want, t)
+}

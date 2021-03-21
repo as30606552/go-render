@@ -155,6 +155,7 @@ type stateType uint8
 const (
 	start stateType = iota // The initial state and the state of successful completion of parsing.
 	err                    // The state of the error found during the parsing process.
+	first                  // First available state.
 )
 
 // Interface of the parser of a specific element from a .obj file.
@@ -189,8 +190,9 @@ const (
 type elementParser interface {
 	// Returns the next state of the state machine based on the previous state and the received token type.
 	transition(tokenType scanner.TokenType, state stateType) stateType
-	// Performs the necessary actions on the received token when switching to the state.
-	action(state stateType, token string)
+	// Performs the necessary actions on the received token when transitioning from the state.
+	// May return error information.
+	action(state stateType, token string) error
 	// Returns information about the error by the state from which the elementParser went to the err state
 	// and the type of token that was received when going to the err state.
 	message(tokenType scanner.TokenType, state stateType) string
@@ -307,6 +309,7 @@ func (parser *Parser) Next() (ElementType, interface{}) {
 			var (
 				prevState stateType // Contains the previous state of the parser to get the error message.
 				state     stateType // Contains the parser state of a specific element.
+				er        error
 			)
 			for {
 				tokenType, token = parser.scanner.Next()
@@ -322,7 +325,11 @@ func (parser *Parser) Next() (ElementType, interface{}) {
 					parser.log(p.message(tokenType, prevState), token, e)
 					return parser.Next()
 				default:
-					p.action(prevState, token)
+					er = p.action(state, token)
+					if er != nil {
+						parser.log(er.Error(), token, e)
+						return parser.Next()
+					}
 				}
 			}
 		} else {
