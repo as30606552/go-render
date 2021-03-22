@@ -17,28 +17,22 @@ type Image struct {
 	img *image.RGBA
 }
 
-// Creates a new Image object with the specified width and height.
-func NewImage(width, height uint) *Image {
-	return &Image{image.NewRGBA(image.Rect(0, 0, int(width), int(height)))}
-}
-
 // Creates an all-white png image with the size W*H in the examples/pictures directory.
-func WhiteImage(width, height int) *Image {
-	var img = NewImage(uint(width), uint(height))
-	for i := 0; i < width; i++ {
-		for j := 0; j < height; j++ {
-			img.Set(i, j, *NewRGB(255, 255, 255))
+func WhiteImage(width, height int) Image  {
+	img := Image{image.NewRGBA(image.Rect(0, 0, 200, 200))}
+	for i := 0; i < 200; i++ {
+		for j := 0; j < 200; j++ {
+			img.Set(i, j, RGB{255, 255, 255})
 		}
 	}
 	return img
 }
-
 // Creates an all-black png image with the size W*H in the examples/pictures directory.
-func BlackImage(width, height int) *Image {
-	var img = NewImage(uint(width), uint(height))
-	for i := 0; i < width; i++ {
-		for j := 0; j < height; j++ {
-			img.Set(i, j, *NewRGB(0, 0, 0))
+func BlackImage(width, height int) Image {
+	img := Image{image.NewRGBA(image.Rect(0, 0, 200, 200))}
+	for i := 0; i < 200; i++ {
+		for j := 0; j < 200; j++ {
+			img.Set(i, j, RGB{0, 0, 0})
 		}
 	}
 	return img
@@ -67,7 +61,7 @@ func (img Image) Get(x, y int) RGB {
 
 // Sets the color of the pixel at (x, y).
 func (img Image) Set(x, y int, rgb RGB) {
-	img.img.SetRGBA(x, y, rgb.ToRGBA())
+	img.img.Set(x, y, rgb.ToRGBA())
 }
 
 // Saves the image in a file named filename.
@@ -81,7 +75,7 @@ func (img Image) Save(filename string) error {
 	if err != nil {
 		return err
 	}
-	if err := png.Encode(file, img); err != nil {
+	if err := png.Encode(file, img.img); err != nil {
 		_ = file.Close()
 		return err
 	}
@@ -90,7 +84,7 @@ func (img Image) Save(filename string) error {
 
 // Line drawing method.
 // Takes 2 points coordinates (x0, y0), (x1, y1) and line color (rgb) as input.
-// Create a line by Bresenham algorithm.
+// Draw a line by Bresenham algorithm.
 func (img *Image) Line(point1, point2 image.Point, rgb RGB) {
 	steep := false
 	if math.Abs(float64(point1.X-point2.X)) < math.Abs(float64(point1.Y-point2.Y)) {
