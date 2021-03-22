@@ -17,9 +17,12 @@ type Image struct {
 	img *image.RGBA
 }
 
+func NewImage(width, height uint) *Image {
+	return &Image{image.NewRGBA(image.Rect(0, 0, int(width), int(height)))}
+}
 // Creates an all-white png image with the size W*H in the examples/pictures directory.
-func WhiteImage(width, height int) Image  {
-	img := Image{image.NewRGBA(image.Rect(0, 0, 200, 200))}
+func WhiteImage(width, height int) *Image  {
+	img := NewImage(200,200)
 	for i := 0; i < 200; i++ {
 		for j := 0; j < 200; j++ {
 			img.Set(i, j, RGB{255, 255, 255})
@@ -56,7 +59,7 @@ func (img Image) At(x, y int) color.Color {
 // Returns the color of the pixel at (x, y).
 func (img Image) Get(x, y int) RGB {
 	var r, g, b, _ = img.At(x, y).RGBA()
-	return *NewRGB(uint8(r), uint8(g), uint8(b))
+	return NewRGB(uint8(r), uint8(g), uint8(b))
 }
 
 // Sets the color of the pixel at (x, y).
