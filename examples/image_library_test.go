@@ -9,10 +9,6 @@ import (
 	"testing"
 )
 
-const (
-	W = 600
-	H = 400
-)
 
 // Creates a file with the specified name and places the specified image in it.
 func makeFile(img image.Image, filename string) {
@@ -31,6 +27,8 @@ func makeFile(img image.Image, filename string) {
 
 // Creates an all-black png image with the size W*H in the examples/pictures directory.
 func BlackImage() {
+	var W  = 600 // Image Width.
+	var H  = 400 // Image Height.
 	var img = image.NewGray(image.Rect(0, 0, W, H))
 	for i := 0; i < W; i++ {
 		for j := 0; j < H; j++ {
@@ -42,6 +40,8 @@ func BlackImage() {
 
 // Creates an all-white png image with the size W*H in the examples/pictures directory.
 func WhiteImage() {
+	var W  = 600 // Image Width.
+	var H  = 400 // Image Height.
 	var img = image.NewGray(image.Rect(0, 0, W, H))
 	for i := 0; i < W; i++ {
 		for j := 0; j < H; j++ {
@@ -53,6 +53,8 @@ func WhiteImage() {
 
 // Creates an all-red png image with the size W*H in the examples/pictures directory.
 func RedImage() {
+	var W  = 600 // Image Width.
+	var H  = 400 // Image Height.
 	var img = image.NewRGBA(image.Rect(0, 0, W, H))
 	for i := 0; i < W; i++ {
 		for j := 0; j < H; j++ {
@@ -64,6 +66,8 @@ func RedImage() {
 
 // Creates a gradient png image with the size W*H in the examples/pictures directory.
 func GradientImage() {
+	var W  = 600 // Image Width.
+	var H  = 400 // Image Height.
 	var img = image.NewGray(image.Rect(0, 0, W, H))
 	for i := 0; i < W; i++ {
 		for j := 0; j < H; j++ {
@@ -83,28 +87,28 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-// Example of creating a black image
+// Example of creating a black image.
 func ExampleBlackImage() {
 	BlackImage()
 	fmt.Println("Ok")
 	// Output: Ok
 }
 
-// Example of creating a white image
+// Example of creating a white image.
 func ExampleWhiteImage() {
 	WhiteImage()
 	fmt.Println("Ok")
 	// Output: Ok
 }
 
-// Example of creating a red image
+// Example of creating a red image.
 func ExampleRedImage() {
 	RedImage()
 	fmt.Println("Ok")
 	// Output: Ok
 }
 
-// Example of creating a gradient image
+// Example of creating a gradient image.
 func ExampleGradientImage() {
 	GradientImage()
 	fmt.Println("Ok")
