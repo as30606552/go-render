@@ -12,18 +12,28 @@ func ExampleParser_Next_vertices() {
 	if err != nil {
 		panic(err)
 	}
-	defer input.Close()
+	defer func() {
+		if err = input.Close(); err != nil {
+			panic(err)
+		}
+	}()
 	output, err := os.Create("testdata/vertices_output.txt")
 	if err != nil {
 		panic(err)
 	}
-	defer output.Close()
+	defer func() {
+		if err = output.Close(); err != nil {
+			panic(err)
+		}
+	}()
 	var parser = NewParser(input)
-	parser.Output = output
+	parser.Output(output)
 	var elementType, element = parser.Next()
 	for elementType != EndOfFile {
 		if elementType == Vertex {
 			fmt.Printf("%s : %v\n", elementType, element)
+		} else {
+			fmt.Fprintf(output, "[INFO] unnecessary element: %s\n", elementType)
 		}
 		elementType, element = parser.Next()
 	}
@@ -48,14 +58,22 @@ func ExampleParser_Next_faces() {
 	if err != nil {
 		panic(err)
 	}
-	defer input.Close()
+	defer func() {
+		if err = input.Close(); err != nil {
+			panic(err)
+		}
+	}()
 	output, err := os.Create("testdata/faces_output.txt")
 	if err != nil {
 		panic(err)
 	}
-	defer output.Close()
+	defer func() {
+		if err = output.Close(); err != nil {
+			panic(err)
+		}
+	}()
 	var parser = NewParser(input)
-	parser.Output = output
+	parser.Output(output)
 	var elementType, element = parser.Next()
 	for elementType != EndOfFile {
 		if elementType == Face {

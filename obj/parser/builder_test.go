@@ -1,11 +1,12 @@
 package parser
 
 import (
+	"computer_graphics/obj/parser/types"
 	"computer_graphics/obj/scanner"
-	"computer_graphics/obj/types"
 	"testing"
 )
 
+// Testing a finite state machine table of an arbitrary elementParser.
 func testParser(parser elementParser, want [][scanner.TokensCount]stateType, t *testing.T) {
 	var (
 		got     = parser.(*finiteStateMachine).matrix
@@ -36,6 +37,7 @@ func testParser(parser elementParser, want [][scanner.TokensCount]stateType, t *
 	}
 }
 
+// Testing the vertex elementParser.
 func TestBuildParser_vertex(t *testing.T) {
 	var (
 		parser = buildParser(Vertex, types.NewVertex())
@@ -56,25 +58,7 @@ func TestBuildParser_vertex(t *testing.T) {
 	testParser(parser, want, t)
 }
 
-func TestBuildParser_point(t *testing.T) {
-	var (
-		parser = buildParser(Point, types.NewPoint())
-		want   = [][scanner.TokensCount]stateType{
-			{1, 1, 1, 1, 2, 1, 1, 1, 1},
-			{1, 1, 1, 1, 1, 1, 1, 1, 1},
-			{1, 3, 1, 1, 1, 1, 1, 1, 1},
-			{1, 1, 1, 1, 4, 1, 1, 1, 1},
-			{1, 5, 1, 1, 1, 1, 1, 1, 1},
-			{1, 1, 1, 1, 6, 1, 1, 1, 1},
-			{1, 7, 1, 1, 1, 1, 1, 1, 1},
-			{1, 1, 1, 1, 8, 0, 0, 1, 1},
-			{1, 9, 1, 1, 1, 0, 0, 1, 1},
-			{1, 1, 1, 1, 8, 0, 0, 1, 1},
-		}
-	)
-	testParser(parser, want, t)
-}
-
+// Testing the face elementParser.
 func TestBuildParser_face(t *testing.T) {
 	var (
 		parser = buildParser(Face, types.NewFace())

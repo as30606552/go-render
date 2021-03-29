@@ -1,6 +1,6 @@
 package parser
 
-import "computer_graphics/obj/types"
+import "computer_graphics/obj/parser/types"
 
 // A registry of parsers for each type of element in the .obj file.
 // To add support for the new model description format, you need to implement a parser for this element

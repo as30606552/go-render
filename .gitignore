@@ -6,3 +6,4 @@ examples/pictures
 
 # testable examples output
 obj/parser/testdata/*_output.txt
+pngimage/testdata

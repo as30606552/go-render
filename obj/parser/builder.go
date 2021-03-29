@@ -1,8 +1,8 @@
 package parser
 
 import (
+	"computer_graphics/obj/parser/types"
 	"computer_graphics/obj/scanner"
-	"computer_graphics/obj/types"
 	"errors"
 	"fmt"
 	"reflect"
@@ -119,7 +119,7 @@ func (s *boolSetter) set(token string, value reflect.Value) error {
 func (s *boolSetter) expected() scanner.TokenType { return scanner.Word }
 
 func (s *boolSetter) changeName(name string) {
-	s.error = errors.New(fmt.Sprintf("the %s parameter must take the values 'on' or 'off'", name))
+	s.error = fmt.Errorf("the %s parameter must take the values 'on' or 'off'", name)
 }
 
 func newBoolSetter(name string) *boolSetter {
@@ -147,7 +147,7 @@ func (s *directionTypeSetter) set(token string, value reflect.Value) error {
 func (s *directionTypeSetter) expected() scanner.TokenType { return scanner.Word }
 
 func (s *directionTypeSetter) changeName(name string) {
-	s.error = errors.New(fmt.Sprintf("the %s parameter must take the values 'v' or 'u'", name))
+	s.error = fmt.Errorf("the %s parameter must take the values 'v' or 'u'", name)
 }
 
 func newDirectionTypeSetter(name string) *directionTypeSetter {
@@ -172,7 +172,7 @@ func (s *intSetter) set(token string, value reflect.Value) error {
 func (s *intSetter) expected() scanner.TokenType { return scanner.Integer }
 
 func (s *intSetter) changeName(name string) {
-	s.error = errors.New(fmt.Sprintf("failed to convert the token to an integer when reading %s", name))
+	s.error = fmt.Errorf("failed to convert the token to an integer when reading %s", name)
 }
 
 func newIntSetter(name string) *intSetter {
@@ -197,7 +197,7 @@ func (s *floatSetter) set(token string, value reflect.Value) error {
 func (s *floatSetter) expected() scanner.TokenType { return scanner.Float }
 
 func (s *floatSetter) changeName(name string) {
-	s.error = errors.New(fmt.Sprintf("failed to convert the token to a float when reading %s", name))
+	s.error = fmt.Errorf("failed to convert the token to a float when reading %s", name)
 }
 
 func newFloatSetter(name string) *floatSetter {
@@ -215,7 +215,7 @@ func (s *stringSetter) set(token string, value reflect.Value) error {
 
 func (s *stringSetter) expected() scanner.TokenType { return scanner.Float }
 
-func (s *stringSetter) changeName(name string) {}
+func (s *stringSetter) changeName(_ string) {}
 
 func newStringSetter() *stringSetter { return &stringSetter{} }
 

@@ -54,7 +54,7 @@ type Scanner interface {
 	// Returns true if the Scanner will skip comments and will not return comment tokens.
 	IsSkipComments() bool
 	// You can use this method to enable or disable skipping comments.
-	SetSkipComments(skipComments bool)
+	SkipComments(skipComments bool)
 }
 
 // One of the possible states of a finite state machine.
@@ -300,6 +300,6 @@ func (scanner *scanner) IsSkipComments() bool {
 }
 
 // Implementation of the SetSkipComments method in the Scanner interface.
-func (scanner *scanner) SetSkipComments(skipComments bool) {
+func (scanner *scanner) SkipComments(skipComments bool) {
 	scanner.skipComments = skipComments
 }

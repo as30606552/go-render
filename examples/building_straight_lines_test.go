@@ -16,11 +16,11 @@ func starLine(method drawingStraightLine, img *pngimage.Image, rgb pngimage.RGB)
 		alpha := (float64(2*i) * math.Pi) / 13
 		x := int(100 + 95*math.Cos(alpha))
 		y := int(100 + 95*math.Sin(alpha))
-		method(image.Point{100, 100}, image.Point{x, y}, img, rgb)
+		method(image.Point{X: 100, Y: 100}, image.Point{X: x, Y: y}, img, rgb)
 	}
 }
 
-// Create a line by drawing N points on a straight line.
+// Creates a line by drawing N points on a straight line.
 func SimplestMethod(point1, point2 image.Point, img *pngimage.Image, rgb pngimage.RGB) {
 	for t := 0.0; t < 1.0; t += 0.01 {
 		x := int(float64(point1.X)*(1.0-t) + float64(point2.X)*t)
@@ -40,7 +40,7 @@ func SecondMethod(point1, point2 image.Point, img *pngimage.Image, rgb pngimage.
 
 // Create a line by an improved the third method.
 func ThirdMethod(point1, point2 image.Point, img *pngimage.Image, rgb pngimage.RGB) {
-	steep := false
+	var steep = false
 	if math.Abs(float64(point1.X-point2.X)) < math.Abs(float64(point1.Y-point2.Y)) {
 		point1.X, point1.Y = point1.Y, point1.X
 		point2.X, point2.Y = point2.Y, point2.X
@@ -63,30 +63,45 @@ func ThirdMethod(point1, point2 image.Point, img *pngimage.Image, rgb pngimage.R
 
 // Example of creating a simplest method image.
 func ExampleSimplestMethod() {
-	var img = pngimage.WhiteImage(200, 200)
-	var rgb = pngimage.NewRGB(255, 0, 0)
+	var (
+		img = pngimage.WhiteImage(200, 200)
+		rgb = pngimage.RGB{R: 255}
+	)
 	starLine(SimplestMethod, img, rgb)
-	img.Save("pictures/simplest_method_image.png")
-	fmt.Println("Ok")
+	if err := img.Save("pictures/simplest_method_image.png"); err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Ok")
+	}
 	// Output: Ok
 }
 
 // Example of creating a second method image.
 func ExampleSecondMethod() {
-	var img = pngimage.WhiteImage(200, 200)
-	var rgb = pngimage.NewRGB(255, 0, 0)
+	var (
+		img = pngimage.WhiteImage(200, 200)
+		rgb = pngimage.RGB{R: 255}
+	)
 	starLine(SecondMethod, img, rgb)
-	img.Save("pictures/second_method_image.png")
-	fmt.Println("Ok")
+	if err := img.Save("pictures/second_method_image.png"); err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Ok")
+	}
 	// Output: Ok
 }
 
 // Example of creating a third method image.
 func ExampleThirdMethod() {
-	var img = pngimage.WhiteImage(200, 200)
-	var rgb = pngimage.NewRGB(255, 0, 0)
+	var (
+		img = pngimage.WhiteImage(200, 200)
+		rgb = pngimage.RGB{R: 255}
+	)
 	starLine(ThirdMethod, img, rgb)
-	img.Save("pictures/third_method_image.png")
-	fmt.Println("Ok")
+	if err := img.Save("pictures/third_method_image.png"); err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Ok")
+	}
 	// Output: Ok
 }

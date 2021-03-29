@@ -105,6 +105,37 @@ func (elementType ElementType) String() string {
 	return elementsMap[elementType]
 }
 
+// Allows you to call the Next method sequentially to get elements from the .obj file.
+// Display information about problems that occur during parsing.
+// You can disable the output by using the ignoreWarnings and ignoreErrors fields.
+// You can also specify io.Writer to output this information to.
+type Parser interface {
+	// Returns the next element read from the reader.
+	// Lines of unsupported format and lines containing an error are skipped and searched for matches further.
+	// Ensures that the returned object can be safely cast to the structure from the package types
+	// corresponding to the constant ElementType.
+	// When the end of the file is reached, it always returns (EndOfFile, nil).
+	Next() (ElementType, interface{})
+	// Sets a new io.Writer for displaying error and warning messages.
+	// If nil is set, no messages will be output.
+	Output(w io.Writer)
+	// Enables or disables the warning output.
+	IgnoreWarnings(iw bool)
+	// Returns true if Parser does not output warnings.
+	IsIgnoreWarnings() bool
+	// Enables or disables the error output.
+	IgnoreErrors(ie bool)
+	// Returns true if Parser does not output errors.
+	IsIgnoreErrors() bool
+}
+
+// Creates a new .obj file parser.
+// By default, it outputs all errors and warnings in os.Stderr.
+// This can be changed by using the Parser.Output, Parser.IgnoreWarnings, Parser.IgnoreErrors methods.
+func NewParser(reader io.Reader) Parser {
+	return &parser{scanner: scanner.NewScanner(reader), outputWriter: os.Stderr}
+}
+
 // Sets the match between the first word in the line in .obj file and the type of the element that is written in this line.
 var elementDeclarationsMap = map[string]ElementType{
 	"v":          Vertex,
@@ -158,18 +189,18 @@ const (
 	first                  // First available state.
 )
 
-// Interface of the parser of a specific element from a .obj file.
-// The logic of the parser is based on a finite state machine.
+// Interface for parsing a specific element from a .obj file.
+// The logic of the elementParser is based on a finite state machine.
 // Implementations must contain the logic of transitions between states of the state machine
 // and the logic of actions that must be performed when switching to a certain state.
 //
-// Parser sequentially gives the next method input tokens from the .obj file,
+// Parser sequentially gives the transition method input tokens from the .obj file,
 // starting with a space after the name of the element format supported by the elementParser.
 // After that, the received state is checked: if the elementParser has moved to the start state,
 // the result method is called to get the read data; if the elementParser has moved to the err state,
 // the message method is called to get the error information.
 //
-// The first two state values are reserved:
+// Two state values are reserved:
 //
 // 0 - start:
 //
@@ -202,22 +233,12 @@ type elementParser interface {
 	result() interface{}
 }
 
-// Allows you to call the Next method sequentially to get the types from the .obj file.
-// Display information about problems that occur during parsing.
-// You can disable the output by using the IgnoreWarnings and IgnoreErrors fields.
-// You can also specify io.Writer to output this information to.
-type Parser struct {
+// Implements the Parser interface.
+type parser struct {
 	scanner        scanner.Scanner // A scanner that splits the input file into tokens.
-	Output         io.Writer       // Recipient of error and warning messages.
-	IgnoreWarnings bool            // If true, no error messages will be output to the Output.
-	IgnoreErrors   bool            // If true, no warning messages will be output to the Output.
-}
-
-// Creates a new .obj file parser.
-// By default, it outputs all errors and warnings in os.Stderr.
-// This can be changed by using the Parser.Output, Parser.IgnoreWarnings, Parser.IgnoreErrors fields.
-func NewParser(reader io.Reader) *Parser {
-	return &Parser{scanner: scanner.NewScanner(reader), Output: os.Stderr}
+	outputWriter   io.Writer       // Recipient of error and warning messages.
+	ignoreWarnings bool            // If true, no error messages will be output to the outputWriter.
+	ignoreErrors   bool            // If true, no warning messages will be output to the outputWriter.
 }
 
 // Type of output message.
@@ -240,12 +261,12 @@ func (t logType) String() string {
 	}
 }
 
-// Outputs a message in Output in the format:
+// Outputs a message in outputWriter in the format:
 // [{log type}] line: {line number}, column: {column number}, token: '{token string}', message: {log message}
 // After that, it outputs the line where the token occurred, highlighting the token.
-// Note that the method skips a line and adds information about it to the msg parameter.
-func (parser *Parser) log(msg, token string, t logType) {
-	if !(t == e && parser.IgnoreErrors || t == w && parser.IgnoreWarnings) {
+// Note that the method skips a line and adds information about it to the msg.
+func (parser *parser) log(msg, token string, t logType) {
+	if !(t == e && parser.ignoreErrors || t == w && parser.ignoreWarnings) && parser.outputWriter != nil {
 		var (
 			tokenLength   int
 			logTypeString = t.String()
@@ -263,7 +284,7 @@ func (parser *Parser) log(msg, token string, t logType) {
 		var column = parser.scanner.Column() - tokenLength + 2
 		parser.scanner.SkipLine()
 		fmt.Fprintf(
-			parser.Output,
+			parser.outputWriter,
 			"[%s] line: %d, column: %d, token: '%s', message: %s%s\n",
 			logTypeString,
 			parser.scanner.Line()+1,
@@ -273,7 +294,7 @@ func (parser *Parser) log(msg, token string, t logType) {
 			", the line will be skipped",
 		)
 		fmt.Fprintln(
-			parser.Output,
+			parser.outputWriter,
 			strings.Repeat(" ", len(logTypeString)+2),
 			"->",
 			parser.scanner.LineString(),
@@ -286,11 +307,8 @@ func (parser *Parser) log(msg, token string, t logType) {
 	}
 }
 
-// Returns the next element read from the reader.
-// Lines of unsupported format and lines containing an error are skipped and searched for matches further.
-// Ensures that the returned object can be safely cast to the type defined by the constant ElementType.
-// When the end of the file is reached, it always returns (EndOfFile, nil).
-func (parser *Parser) Next() (ElementType, interface{}) {
+// Implementation of the Next method in the Parser interface.
+func (parser *parser) Next() (ElementType, interface{}) {
 	// Skipping empty lines.
 	var tokenType, token = parser.scanner.Next()
 	for tokenType == scanner.EOL || tokenType == scanner.Space {
@@ -341,4 +359,29 @@ func (parser *Parser) Next() (ElementType, interface{}) {
 	// If the line was not read, it means that the parser was not found in the registry,
 	// need to search for the next element.
 	return parser.Next()
+}
+
+// Implementation of the Output method in the Parser interface.
+func (parser *parser) Output(w io.Writer) {
+	parser.outputWriter = w
+}
+
+// Implementation of the IgnoreWarnings method in the Parser interface.
+func (parser *parser) IgnoreWarnings(iw bool) {
+	parser.ignoreWarnings = iw
+}
+
+// Implementation of the IsIgnoreWarnings method in the Parser interface.
+func (parser *parser) IsIgnoreWarnings() bool {
+	return parser.ignoreWarnings
+}
+
+// Implementation of the IgnoreErrors method in the Parser interface.
+func (parser *parser) IgnoreErrors(ie bool) {
+	parser.ignoreErrors = ie
+}
+
+// Implementation of the IsIgnoreErrors method in the Parser interface.
+func (parser *parser) IsIgnoreErrors() bool {
+	return parser.ignoreErrors
 }
