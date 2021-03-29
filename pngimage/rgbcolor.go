@@ -10,8 +10,8 @@ type RGB struct {
 }
 
 // Creates a new RGB object with the specified red, green and blue values.
-func NewRGB(r, g, b uint8) *RGB {
-	return &RGB{R: r, G: g, B: b}
+func NewRGB(r, g, b uint8) RGB {
+	return RGB{R: r, G: g, B: b}
 }
 
 // Implementation of the RGBA method in the color.Color interface.
