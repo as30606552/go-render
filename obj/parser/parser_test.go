@@ -6,7 +6,7 @@ import (
 )
 
 // Reads all vertices from a file containing errors and an unsupported format.
-// Check the testdata/vertices_output.txt file for information about errors and warnings!
+// Check the testdata/output/vertices_output.txt file for information about errors and warnings!
 func ExampleParser_Next_vertices() {
 	input, err := os.Open("testdata/vertices.obj")
 	if err != nil {
@@ -17,7 +17,7 @@ func ExampleParser_Next_vertices() {
 			panic(err)
 		}
 	}()
-	output, err := os.Create("testdata/vertices_output.txt")
+	output, err := os.Create("testdata/output/vertices_output.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -52,7 +52,7 @@ func ExampleParser_Next_vertices() {
 }
 
 // Reads all faces from a file containing errors and an unsupported format.
-// Check the testdata/faces_output.txt file for information about errors and warnings!
+// Check the testdata/output/faces_output.txt file for information about errors and warnings!
 func ExampleParser_Next_faces() {
 	input, err := os.Open("testdata/faces.obj")
 	if err != nil {
@@ -63,7 +63,7 @@ func ExampleParser_Next_faces() {
 			panic(err)
 		}
 	}()
-	output, err := os.Create("testdata/faces_output.txt")
+	output, err := os.Create("testdata/output/faces_output.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -78,6 +78,8 @@ func ExampleParser_Next_faces() {
 	for elementType != EndOfFile {
 		if elementType == Face {
 			fmt.Printf("%s : %v\n", elementType, element)
+		} else {
+			fmt.Fprintf(output, "[INFO] unnecessary element: %s\n", elementType)
 		}
 		elementType, element = parser.Next()
 	}

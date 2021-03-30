@@ -2,8 +2,9 @@
 .idea
 
 # try to generate images by running the code yourself
-examples/pictures
+examples/testdata/pictures
+pngimage/testdata/pictures
 
 # testable examples output
-obj/parser/testdata/*_output.txt
-pngimage/testdata
+obj/parser/testdata/output
+examples/testdata/output

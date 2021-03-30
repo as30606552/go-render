@@ -23,3 +23,28 @@ func (rgb RGB) ToRGBA() color.RGBA {
 		A: 255,
 	}
 }
+
+// Creates black RGB color.
+func BlackColor() RGB {
+	return RGB{R: 0, G: 0, B: 0}
+}
+
+// Creates white RGB color.
+func WhiteColor() RGB {
+	return RGB{R: 255, G: 255, B: 255}
+}
+
+// Creates red RGB color.
+func RedColor() RGB {
+	return RGB{R: 255, G: 0, B: 0}
+}
+
+// Creates green RGB color.
+func GreenColor() RGB {
+	return RGB{R: 0, G: 255, B: 0}
+}
+
+// Creates blue RGB color.
+func BlueColor() RGB {
+	return RGB{R: 0, G: 0, B: 255}
+}

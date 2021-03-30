@@ -24,10 +24,13 @@ func NewImage(width, height uint) *Image {
 
 // Creates an all-white Image with the specified width and height.
 func WhiteImage(width, height uint) *Image {
-	var img = NewImage(width, height)
+	var (
+		img = NewImage(width, height)
+		rgb = WhiteColor()
+	)
 	for i := 0; i < int(width); i++ {
 		for j := 0; j < int(height); j++ {
-			img.Set(i, j, RGB{255, 255, 255})
+			img.Set(i, j, rgb)
 		}
 	}
 	return img
@@ -35,10 +38,13 @@ func WhiteImage(width, height uint) *Image {
 
 // Creates an all-black Image with the specified width and height.
 func BlackImage(width, height uint) *Image {
-	var img = NewImage(width, height)
+	var (
+		img = NewImage(width, height)
+		rgb = BlackColor()
+	)
 	for i := 0; i < int(width); i++ {
 		for j := 0; j < int(height); j++ {
-			img.Set(i, j, RGB{0, 0, 0})
+			img.Set(i, j, rgb)
 		}
 	}
 	return img

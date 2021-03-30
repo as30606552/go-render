@@ -65,10 +65,10 @@ func ThirdMethod(point1, point2 image.Point, img *pngimage.Image, rgb pngimage.R
 func ExampleSimplestMethod() {
 	var (
 		img = pngimage.WhiteImage(200, 200)
-		rgb = pngimage.RGB{R: 255}
+		rgb = pngimage.RedColor()
 	)
 	starLine(SimplestMethod, img, rgb)
-	if err := img.Save("pictures/simplest_method_image.png"); err != nil {
+	if err := img.Save("testdata/pictures/simplest_method_image.png"); err != nil {
 		fmt.Println(err)
 	} else {
 		fmt.Println("Ok")
@@ -80,10 +80,10 @@ func ExampleSimplestMethod() {
 func ExampleSecondMethod() {
 	var (
 		img = pngimage.WhiteImage(200, 200)
-		rgb = pngimage.RGB{R: 255}
+		rgb = pngimage.RedColor()
 	)
 	starLine(SecondMethod, img, rgb)
-	if err := img.Save("pictures/second_method_image.png"); err != nil {
+	if err := img.Save("testdata/pictures/second_method_image.png"); err != nil {
 		fmt.Println(err)
 	} else {
 		fmt.Println("Ok")
@@ -95,10 +95,10 @@ func ExampleSecondMethod() {
 func ExampleThirdMethod() {
 	var (
 		img = pngimage.WhiteImage(200, 200)
-		rgb = pngimage.RGB{R: 255}
+		rgb = pngimage.RedColor()
 	)
 	starLine(ThirdMethod, img, rgb)
-	if err := img.Save("pictures/third_method_image.png"); err != nil {
+	if err := img.Save("testdata/pictures/third_method_image.png"); err != nil {
 		fmt.Println(err)
 	} else {
 		fmt.Println("Ok")

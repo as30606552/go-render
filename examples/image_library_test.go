@@ -6,7 +6,6 @@ import (
 	"image/color"
 	"image/png"
 	"os"
-	"testing"
 )
 
 // Creates a file with the specified name and places the specified image in it.
@@ -25,7 +24,7 @@ func makeFile(img image.Image, filename string) error {
 	return nil
 }
 
-// Creates an all-black png image in the examples/pictures directory.
+// Creates an all-black png image in the testdata/pictures directory.
 func BlackImage() error {
 	const (
 		w = 600 // Image width.
@@ -37,10 +36,10 @@ func BlackImage() error {
 			img.SetGray(i, j, color.Gray{Y: 0})
 		}
 	}
-	return makeFile(img, "pictures/black_image.png")
+	return makeFile(img, "testdata/pictures/black_image.png")
 }
 
-// Creates an all-white png image in the examples/pictures directory.
+// Creates an all-white png image in the testdata/pictures directory.
 func WhiteImage() error {
 	const (
 		w = 600 // Image width.
@@ -52,10 +51,10 @@ func WhiteImage() error {
 			img.SetGray(i, j, color.Gray{Y: 255})
 		}
 	}
-	return makeFile(img, "pictures/white_image.png")
+	return makeFile(img, "testdata/pictures/white_image.png")
 }
 
-// Creates an all-red png image with the size W*H in the examples/pictures directory.
+// Creates an all-red png image with the size W*H in the testdata/pictures directory.
 func RedImage() error {
 	const (
 		w = 600 // Image width.
@@ -67,10 +66,10 @@ func RedImage() error {
 			img.SetRGBA(i, j, color.RGBA{R: 255, A: 255})
 		}
 	}
-	return makeFile(img, "pictures/red_image.png")
+	return makeFile(img, "testdata/pictures/red_image.png")
 }
 
-// Creates a gradient png image with the size W*H in the examples/pictures directory.
+// Creates a gradient png image with the size W*H in the testdata/pictures directory.
 func GradientImage() error {
 	const (
 		w = 600 // Image width.
@@ -82,17 +81,7 @@ func GradientImage() error {
 			img.SetGray(i, j, color.Gray{Y: uint8((i + j) % 256)})
 		}
 	}
-	return makeFile(img, "pictures/gradient_image.png")
-}
-
-func TestMain(m *testing.M) {
-	if _, err := os.Stat("pictures"); os.IsNotExist(err) {
-		err = os.Mkdir("pictures", os.ModePerm)
-		if err != nil {
-			panic(err)
-		}
-	}
-	m.Run()
+	return makeFile(img, "testdata/pictures/gradient_image.png")
 }
 
 // Example of creating a black image.
