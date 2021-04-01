@@ -9,11 +9,6 @@ type RGB struct {
 	R, G, B uint8
 }
 
-// Creates a new Image object with the specified red, green and blue values.
-func NewRGB(r, g, b uint8) RGB {
-	return RGB{R: r, G: g, B: b}
-}
-
 // Implementation of the RGBA method in the color.Color interface.
 func (rgb RGB) RGBA() (r, g, b, a uint32) {
 	return uint32(rgb.R), uint32(rgb.G), uint32(rgb.B), 255
@@ -27,4 +22,29 @@ func (rgb RGB) ToRGBA() color.RGBA {
 		B: rgb.B,
 		A: 255,
 	}
+}
+
+// Creates black RGB color.
+func BlackColor() RGB {
+	return RGB{R: 0, G: 0, B: 0}
+}
+
+// Creates white RGB color.
+func WhiteColor() RGB {
+	return RGB{R: 255, G: 255, B: 255}
+}
+
+// Creates red RGB color.
+func RedColor() RGB {
+	return RGB{R: 255, G: 0, B: 0}
+}
+
+// Creates green RGB color.
+func GreenColor() RGB {
+	return RGB{R: 0, G: 255, B: 0}
+}
+
+// Creates blue RGB color.
+func BlueColor() RGB {
+	return RGB{R: 0, G: 0, B: 255}
 }

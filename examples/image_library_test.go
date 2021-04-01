@@ -6,111 +6,120 @@ import (
 	"image/color"
 	"image/png"
 	"os"
-	"testing"
 )
 
-
 // Creates a file with the specified name and places the specified image in it.
-func makeFile(img image.Image, filename string) {
+func makeFile(img image.Image, filename string) error {
 	var file, err = os.Create(filename)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	if err := png.Encode(file, img); err != nil {
+	if err = png.Encode(file, img); err != nil {
 		_ = file.Close()
-		panic(err)
+		return err
 	}
-	if err := file.Close(); err != nil {
-		panic(err)
+	if err = file.Close(); err != nil {
+		return err
 	}
+	return nil
 }
 
-// Creates an all-black png image with the size W*H in the examples/pictures directory.
-func BlackImage() {
-	var W  = 600 // Image Width.
-	var H  = 400 // Image Height.
-	var img = image.NewGray(image.Rect(0, 0, W, H))
-	for i := 0; i < W; i++ {
-		for j := 0; j < H; j++ {
+// Creates an all-black png image in the testdata/pictures directory.
+func BlackImage() error {
+	const (
+		w = 600 // Image width.
+		h = 400 // Image height.
+	)
+	var img = image.NewGray(image.Rect(0, 0, w, h))
+	for i := 0; i < w; i++ {
+		for j := 0; j < h; j++ {
 			img.SetGray(i, j, color.Gray{Y: 0})
 		}
 	}
-	makeFile(img, "pictures/black_image.png")
+	return makeFile(img, "testdata/pictures/black_image.png")
 }
 
-// Creates an all-white png image with the size W*H in the examples/pictures directory.
-func WhiteImage() {
-	var W  = 600 // Image Width.
-	var H  = 400 // Image Height.
-	var img = image.NewGray(image.Rect(0, 0, W, H))
-	for i := 0; i < W; i++ {
-		for j := 0; j < H; j++ {
+// Creates an all-white png image in the testdata/pictures directory.
+func WhiteImage() error {
+	const (
+		w = 600 // Image width.
+		h = 400 // Image height.
+	)
+	var img = image.NewGray(image.Rect(0, 0, w, h))
+	for i := 0; i < w; i++ {
+		for j := 0; j < h; j++ {
 			img.SetGray(i, j, color.Gray{Y: 255})
 		}
 	}
-	makeFile(img, "pictures/white_image.png")
+	return makeFile(img, "testdata/pictures/white_image.png")
 }
 
-// Creates an all-red png image with the size W*H in the examples/pictures directory.
-func RedImage() {
-	var W  = 600 // Image Width.
-	var H  = 400 // Image Height.
-	var img = image.NewRGBA(image.Rect(0, 0, W, H))
-	for i := 0; i < W; i++ {
-		for j := 0; j < H; j++ {
+// Creates an all-red png image with the size W*H in the testdata/pictures directory.
+func RedImage() error {
+	const (
+		w = 600 // Image width.
+		h = 400 // Image height.
+	)
+	var img = image.NewRGBA(image.Rect(0, 0, w, h))
+	for i := 0; i < w; i++ {
+		for j := 0; j < h; j++ {
 			img.SetRGBA(i, j, color.RGBA{R: 255, A: 255})
 		}
 	}
-	makeFile(img, "pictures/red_image.png")
+	return makeFile(img, "testdata/pictures/red_image.png")
 }
 
-// Creates a gradient png image with the size W*H in the examples/pictures directory.
-func GradientImage() {
-	var W  = 600 // Image Width.
-	var H  = 400 // Image Height.
-	var img = image.NewGray(image.Rect(0, 0, W, H))
-	for i := 0; i < W; i++ {
-		for j := 0; j < H; j++ {
+// Creates a gradient png image with the size W*H in the testdata/pictures directory.
+func GradientImage() error {
+	const (
+		w = 600 // Image width.
+		h = 400 // Image height.
+	)
+	var img = image.NewGray(image.Rect(0, 0, w, h))
+	for i := 0; i < w; i++ {
+		for j := 0; j < h; j++ {
 			img.SetGray(i, j, color.Gray{Y: uint8((i + j) % 256)})
 		}
 	}
-	makeFile(img, "pictures/gradient_image.png")
-}
-
-func TestMain(m *testing.M) {
-	if _, err := os.Stat("pictures"); os.IsNotExist(err) {
-		err = os.Mkdir("pictures", os.ModePerm)
-		if err != nil {
-			panic(err)
-		}
-	}
-	m.Run()
+	return makeFile(img, "testdata/pictures/gradient_image.png")
 }
 
 // Example of creating a black image.
 func ExampleBlackImage() {
-	BlackImage()
-	fmt.Println("Ok")
+	if err := BlackImage(); err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Ok")
+	}
 	// Output: Ok
 }
 
 // Example of creating a white image.
 func ExampleWhiteImage() {
-	WhiteImage()
-	fmt.Println("Ok")
+	if err := WhiteImage(); err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Ok")
+	}
 	// Output: Ok
 }
 
 // Example of creating a red image.
 func ExampleRedImage() {
-	RedImage()
-	fmt.Println("Ok")
+	if err := RedImage(); err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Ok")
+	}
 	// Output: Ok
 }
 
 // Example of creating a gradient image.
 func ExampleGradientImage() {
-	GradientImage()
-	fmt.Println("Ok")
+	if err := GradientImage(); err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Ok")
+	}
 	// Output: Ok
 }
