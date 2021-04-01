@@ -107,7 +107,7 @@ func (elementType ElementType) String() string {
 
 // Allows you to call the Next method sequentially to get elements from the .obj file.
 // Display information about problems that occur during parsing.
-// You can disable the output by using the ignoreWarnings and ignoreErrors fields.
+// You can disable the output by using the IgnoreWarnings and IgnoreErrors methods.
 // You can also specify io.Writer to output this information to.
 type Parser interface {
 	// Returns the next element read from the reader.
@@ -127,6 +127,8 @@ type Parser interface {
 	IgnoreErrors(ie bool)
 	// Returns true if Parser does not output errors.
 	IsIgnoreErrors() bool
+	// Returns the number of the line that was last processed by the Parser.
+	Line() int
 }
 
 // Creates a new .obj file parser.
@@ -384,4 +386,9 @@ func (parser *parser) IgnoreErrors(ie bool) {
 // Implementation of the IsIgnoreErrors method in the Parser interface.
 func (parser *parser) IsIgnoreErrors() bool {
 	return parser.ignoreErrors
+}
+
+// Implementation of the Line method in the Parser interface.
+func (parser *parser) Line() int {
+	return parser.scanner.Line()
 }
