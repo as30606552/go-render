@@ -5,15 +5,13 @@ import (
 	"computer_graphics/obj/parser/types"
 	"computer_graphics/pngimage"
 	"fmt"
+	"image"
 	"os"
 )
 
-// A function that transforms the coordinates of a vertex into the coordinates of an image
-type transformation func(v *types.Vertex) (int, int)
-
-// Draws all vertices from the rabbit file.obj, using the specified coordinate transformation.
+// Draws all vertices from the testdata/rabbit.obj, using the specified coordinate transformation.
 // The message output redirects to the corresponding file from the testdata/output directory.
-func DrawVertices(t transformation, name string) error {
+func DrawVertices(transform func(v *types.Vertex) image.Point, name string) error {
 	var (
 		input  *os.File
 		output *os.File
@@ -23,7 +21,7 @@ func DrawVertices(t transformation, name string) error {
 	if err != nil {
 		return err
 	}
-	output, err = os.Create(fmt.Sprintf("testdata/output/%s_rabbit_output.txt", name))
+	output, err = os.Create(fmt.Sprintf("testdata/output/%s_rabbit_vertices_output.txt", name))
 	if err != nil {
 		return err
 	}
@@ -33,18 +31,18 @@ func DrawVertices(t transformation, name string) error {
 		img                  = pngimage.WhiteImage(1000, 1000)
 		rgb                  = pngimage.BlackColor()
 		elementType, element = p.Next()
-		x, y                 int
+		point                image.Point
 	)
 	for elementType != parser.EndOfFile {
 		if elementType == parser.Vertex {
-			x, y = t(element.(*types.Vertex))
-			img.Set(x, y, rgb)
+			point = transform(element.(*types.Vertex))
+			img.Set(point.X, point.Y, rgb)
 		} else {
 			fmt.Fprintf(output, "[INFO] unnecessary element: %s\n", elementType)
 		}
 		elementType, element = p.Next()
 	}
-	err = img.Save(fmt.Sprintf("testdata/pictures/%s_rabbit.png", name))
+	err = img.Save(fmt.Sprintf("testdata/pictures/%s_rabbit_vertices.png", name))
 	if err != nil {
 		return err
 	}
@@ -56,11 +54,11 @@ func DrawVertices(t transformation, name string) error {
 }
 
 // Drawing all vertexes using the first coordinate transformation.
-// Check the testdata/output/first_rabbit_output.txt file for information about errors and warnings!
+// Check the testdata/output/first_rabbit_vertices_output.txt file for information about errors and warnings!
 func ExampleDrawVertices_first() {
 	var err = DrawVertices(
-		func(v *types.Vertex) (int, int) {
-			return int(50*v.X + 500), int(-50*v.Y + 500)
+		func(v *types.Vertex) image.Point {
+			return image.Point{X: int(50*v.X + 500), Y: int(-50*v.Y + 500)}
 		},
 		"first",
 	)
@@ -73,11 +71,11 @@ func ExampleDrawVertices_first() {
 }
 
 // Drawing all vertexes using the second coordinate transformation.
-// Check the testdata/output/second_rabbit_output.txt file for information about errors and warnings!
+// Check the testdata/output/second_rabbit_vertices_output.txt file for information about errors and warnings!
 func ExampleDrawVertices_second() {
 	var err = DrawVertices(
-		func(v *types.Vertex) (int, int) {
-			return int(100*v.X + 500), int(-100*v.Y + 500)
+		func(v *types.Vertex) image.Point {
+			return image.Point{X: int(100*v.X + 500), Y: int(-100*v.Y + 500)}
 		},
 		"second",
 	)
@@ -90,11 +88,11 @@ func ExampleDrawVertices_second() {
 }
 
 // Drawing all vertexes using the third coordinate transformation.
-// Check the testdata/output/third_rabbit_output.txt file for information about errors and warnings!
+// Check the testdata/output/third_rabbit_vertices_output.txt file for information about errors and warnings!
 func ExampleDrawVertices_third() {
 	var err = DrawVertices(
-		func(v *types.Vertex) (int, int) {
-			return int(500*v.X + 500), int(-500*v.Y + 500)
+		func(v *types.Vertex) image.Point {
+			return image.Point{X: int(500*v.X + 500), Y: int(-500*v.Y + 500)}
 		},
 		"third",
 	)
@@ -107,11 +105,11 @@ func ExampleDrawVertices_third() {
 }
 
 // Drawing all vertexes using the fourth coordinate transformation.
-// Check the testdata/output/fourth_rabbit_output.txt file for information about errors and warnings!
+// Check the testdata/output/fourth_rabbit_vertices_output.txt file for information about errors and warnings!
 func ExampleDrawVertices_fourth() {
 	var err = DrawVertices(
-		func(v *types.Vertex) (int, int) {
-			return int(4000*v.X + 500), int(-4000*v.Y + 500)
+		func(v *types.Vertex) image.Point {
+			return image.Point{X: int(4000*v.X + 500), Y: int(-4000*v.Y + 500)}
 		},
 		"fourth",
 	)
