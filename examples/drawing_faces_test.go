@@ -180,3 +180,30 @@ func ExampleModel_BasicLighting_rabbit() {
 	}
 	// Output: Ok
 }
+
+// Draws all faces from testdata/fox.obj, darkening the faces that are rotated by a larger angle.
+// Uses a model method that takes into account the overlap of the faces.
+func ExampleModel_BasicLighting_fox() {
+	var input, err = os.Open("testdata/fox.obj")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	var (
+		ipt = importer.Importer{}
+		m   = ipt.Import(input)
+	)
+	m.Transform(defaultFoxTransformation)
+	var img = pngimage.BlackImage(1000, 1000)
+	m.BasicLighting(img, pngimage.RGB{
+		R: 224,
+		G: 90,
+		B: 0,
+	})
+	if err := img.Save("testdata/pictures/fox_z_buffer.png"); err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Ok")
+	}
+	// Output: Ok
+}
