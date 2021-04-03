@@ -1,6 +1,9 @@
 package pngimage
 
-import "image/color"
+import (
+	"image/color"
+	"math/rand"
+)
 
 // A structure for storing colors in RGB format without specifying alfa value.
 // All pixels have a maximum alfa value, meaning they are completely opaque.
@@ -47,4 +50,13 @@ func GreenColor() RGB {
 // Creates blue RGB color.
 func BlueColor() RGB {
 	return RGB{R: 0, G: 0, B: 255}
+}
+
+// Creates random RGB color.
+func RandomColor() RGB {
+	return RGB{
+		R: uint8(rand.Intn(255)),
+		G: uint8(rand.Intn(255)),
+		B: uint8(rand.Intn(255)),
+	}
 }

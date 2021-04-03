@@ -2,7 +2,6 @@ package pngimage
 
 import (
 	"fmt"
-	"image"
 	"math"
 	"os"
 	"testing"
@@ -35,7 +34,7 @@ func ExampleImage_Line() {
 		alpha := (float64(2*i) * math.Pi) / 13
 		x := int(100 + 95*math.Cos(alpha))
 		y := int(100 + 95*math.Sin(alpha))
-		img.Line(image.Point{X: 100, Y: 100}, image.Point{X: x, Y: y}, rgb)
+		img.Line(100, 100, x, y, rgb)
 	}
 	if err := img.Save("testdata/pictures/bresenham_method_image.png"); err != nil {
 		fmt.Println(err)

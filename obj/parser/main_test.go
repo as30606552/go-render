@@ -1,17 +1,14 @@
 package parser
 
 import (
-	"os"
+	"computer_graphics/fsutils"
 	"testing"
 )
 
 // Creates directories for output, if there are none.
 func TestMain(m *testing.M) {
-	if _, err := os.Stat("testdata/output"); os.IsNotExist(err) {
-		err = os.Mkdir("testdata/output", os.ModePerm)
-		if err != nil {
-			panic(err)
-		}
+	if err := fsutils.MakeDirIfNotExists("testdata/output"); err != nil {
+		panic(err)
 	}
 	m.Run()
 }
