@@ -157,3 +157,26 @@ func ExampleDrawTriangle_rabbitBasicLighting() {
 	}
 	// Output: Ok
 }
+
+// Draws all faces from testdata/rabbit.obj, darkening the faces that are rotated by a larger angle.
+// Uses a model method that takes into account the overlap of the faces.
+func ExampleModel_BasicLighting_rabbit() {
+	var input, err = os.Open("testdata/rabbit.obj")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	var (
+		ipt = importer.Importer{}
+		m   = ipt.Import(input)
+	)
+	m.Transform(defaultRabbitTransformation)
+	var img = pngimage.BlackImage(2000, 2000)
+	m.BasicLighting(img, pngimage.WhiteColor())
+	if err := img.Save("testdata/pictures/rabbit_z_buffer.png"); err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Ok")
+	}
+	// Output: Ok
+}

@@ -1,9 +1,11 @@
 package model
 
 import (
+	"computer_graphics/mathutils"
 	"computer_graphics/pngimage"
 	"errors"
 	"fmt"
+	"math"
 )
 
 // Describes a vertex in three-dimensional space.
@@ -64,6 +66,33 @@ func (f *Face) Normal() (float64, float64, float64) {
 		z  = (v2.X-v1.X)*(v2.Y-v3.Y) - (v2.Y-v1.Y)*(v2.X-v3.X)
 	)
 	return x, y, z
+}
+
+// Draws a triangle on the specified image with the specified color.
+func (f *Face) draw(img *pngimage.Image, rgb pngimage.RGB, buffer [][]float64) {
+	var (
+		v1         = f.vertex1
+		v2         = f.vertex2
+		v3         = f.vertex3
+		xMax       = math.Min(float64(img.Width()), mathutils.Max(v1.X, v2.X, v3.X))
+		xMin       = math.Max(0, mathutils.Min(v1.X, v2.X, v3.X))
+		yMax       = math.Min(float64(img.Height()), mathutils.Max(v1.Y, v2.Y, v3.Y))
+		yMin       = math.Max(0, mathutils.Min(v1.Y, v2.Y, v3.Y))
+		l1, l2, l3 float64
+		z          float64
+	)
+	for i := int(math.Ceil(xMin)); float64(i) < xMax; i++ {
+		for j := int(math.Ceil(yMin)); float64(j) < yMax; j++ {
+			l1, l2, l3 = f.BarycentricCoordinates(i, j)
+			if l1 > 0 && l2 > 0 && l3 > 0 {
+				z = l1*v1.Z + l2*v2.Z + l3*v3.Z
+				if z < buffer[i][j] {
+					img.Set(i, j, rgb)
+					buffer[i][j] = z
+				}
+			}
+		}
+	}
 }
 
 // Creates a Face based on its three vertices.
@@ -173,6 +202,38 @@ func (model *Model) WireRender(img *pngimage.Image, rgb pngimage.RGB) {
 		img.Line(int(face.vertex1.X), int(face.vertex1.Y), int(face.vertex2.X), int(face.vertex2.Y), rgb)
 		img.Line(int(face.vertex1.X), int(face.vertex1.Y), int(face.vertex3.X), int(face.vertex3.Y), rgb)
 		img.Line(int(face.vertex2.X), int(face.vertex2.Y), int(face.vertex3.X), int(face.vertex3.Y), rgb)
+	}
+}
+
+// Draws all faces from the model, darkening the faces that are rotated by a larger angle.
+func (model *Model) BasicLighting(img *pngimage.Image, rgb pngimage.RGB) {
+	var (
+		face    *Face
+		x, y, z float64
+		cos     float64
+		buffer  = make([][]float64, img.Width())
+	)
+	for i := 0; i < img.Width(); i++ {
+		buffer[i] = make([]float64, img.Height())
+		for j := 0; j < img.Height(); j++ {
+			buffer[i][j] = math.Inf(+1)
+		}
+	}
+	for i := 0; i < len(model.faces); i++ {
+		face = model.faces[i]
+		x, y, z = face.Normal()
+		cos = z / math.Sqrt(x*x+y*y+z*z)
+		if cos < 0 {
+			face.draw(
+				img,
+				pngimage.RGB{
+					R: uint8(-float64(rgb.R) * cos),
+					G: uint8(-float64(rgb.G) * cos),
+					B: uint8(-float64(rgb.B) * cos),
+				},
+				buffer,
+			)
+		}
 	}
 }
 
