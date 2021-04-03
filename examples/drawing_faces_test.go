@@ -93,7 +93,7 @@ func ExampleDrawTriangle_huge() {
 }
 
 // Draws all faces from testdata/rabbit.obj with random colors.
-func ExampleDrawTriangle_rabbit() {
+func ExampleDrawTriangle_rabbitRainbow() {
 	var input, err = os.Open("testdata/rabbit.obj")
 	if err != nil {
 		fmt.Println(err)
@@ -112,7 +112,45 @@ func ExampleDrawTriangle_rabbit() {
 		face = m.GetFace(i)
 		DrawTriangle(face, img, pngimage.RandomColor())
 	}
-	if err := img.Save("testdata/pictures/rainbow_rabbit.png"); err != nil {
+	if err := img.Save("testdata/pictures/rabbit_rainbow.png"); err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Ok")
+	}
+	// Output: Ok
+}
+
+// Draws all faces from testdata/rabbit.obj, darkening the faces that are rotated by a larger angle.
+func ExampleDrawTriangle_rabbitBasicLighting() {
+	var input, err = os.Open("testdata/rabbit.obj")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	var (
+		ipt = importer.Importer{}
+		m   = ipt.Import(input)
+	)
+	m.Transform(defaultRabbitTransformation)
+	var (
+		face    *model.Face
+		img     = pngimage.BlackImage(2000, 2000)
+		x, y, z float64
+		cos     float64
+	)
+	for i := 0; i < m.FacesCount(); i++ {
+		face = m.GetFace(i)
+		x, y, z = face.Normal()
+		cos = z / math.Sqrt(x*x+y*y+z*z)
+		if cos < 0 {
+			DrawTriangle(face, img, pngimage.RGB{
+				R: uint8(-255 * cos),
+				G: uint8(-255 * cos),
+				B: uint8(-255 * cos),
+			})
+		}
+	}
+	if err := img.Save("testdata/pictures/rabbit_basic_lighting.png"); err != nil {
 		fmt.Println(err)
 	} else {
 		fmt.Println("Ok")

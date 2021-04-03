@@ -53,6 +53,19 @@ func (f *Face) BarycentricCoordinates(x, y int) (float64, float64, float64) {
 	return l1, l2, l3
 }
 
+// Calculates the normal to the surface of the triangle.
+func (f *Face) Normal() (float64, float64, float64) {
+	var (
+		v1 = f.vertex1
+		v2 = f.vertex2
+		v3 = f.vertex3
+		x  = (v2.Y-v1.Y)*(v2.Z-v3.Z) - (v2.Z-v1.Z)*(v2.Y-v3.Y)
+		y  = (v2.X-v1.X)*(v2.Z-v3.Z) - (v2.Z-v1.Z)*(v2.X-v3.X)
+		z  = (v2.X-v1.X)*(v2.Y-v3.Y) - (v2.Y-v1.Y)*(v2.X-v3.X)
+	)
+	return x, y, z
+}
+
 // Creates a Face based on its three vertices.
 func NewFace(vertex1, vertex2, vertex3 *Vertex) *Face {
 	return &Face{
