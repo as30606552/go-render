@@ -1,6 +1,7 @@
 package model
 
 import (
+	"computer_graphics/pngimage"
 	"errors"
 	"fmt"
 )
@@ -12,7 +13,7 @@ type Vertex struct {
 }
 
 // Creates a Vertex based on its three coordinates.
-func newVertex(x, y, z float64) *Vertex {
+func NewVertex(x, y, z float64) *Vertex {
 	return &Vertex{X: x, Y: y, Z: z}
 }
 
@@ -23,22 +24,37 @@ type Face struct {
 }
 
 // Returns the first vertex of the triangle.
-func (f Face) Vertex1() Vertex {
+func (f *Face) Vertex1() Vertex {
 	return *f.vertex1
 }
 
 // Returns the second vertex of the triangle.
-func (f Face) Vertex2() Vertex {
+func (f *Face) Vertex2() Vertex {
 	return *f.vertex2
 }
 
 // Returns the third vertex of the triangle.
-func (f Face) Vertex3() Vertex {
+func (f *Face) Vertex3() Vertex {
 	return *f.vertex3
 }
 
+// Returns the barycentric coordinates of a point in the image relative to the vertices of the face.
+func (f *Face) BarycentricCoordinates(x, y int) (float64, float64, float64) {
+	var (
+		v1 = f.vertex1
+		v2 = f.vertex2
+		v3 = f.vertex3
+		xx = float64(x)
+		yy = float64(y)
+		l1 = ((v2.X-v3.X)*(yy-v3.Y) - (v2.Y-v3.Y)*(xx-v3.X)) / ((v2.X-v3.X)*(v1.Y-v3.Y) - (v2.Y-v3.Y)*(v1.X-v3.X))
+		l2 = ((v3.X-v1.X)*(yy-v1.Y) - (v3.Y-v1.Y)*(xx-v1.X)) / ((v3.X-v1.X)*(v2.Y-v1.Y) - (v3.Y-v1.Y)*(v2.X-v1.X))
+		l3 = ((v1.X-v2.X)*(yy-v2.Y) - (v1.Y-v2.Y)*(xx-v2.X)) / ((v1.X-v2.X)*(v3.Y-v2.Y) - (v1.Y-v2.Y)*(v3.X-v2.X))
+	)
+	return l1, l2, l3
+}
+
 // Creates a Face based on its three vertices.
-func newFace(vertex1, vertex2, vertex3 *Vertex) *Face {
+func NewFace(vertex1, vertex2, vertex3 *Vertex) *Face {
 	return &Face{
 		vertex1: vertex1,
 		vertex2: vertex2,
@@ -75,7 +91,7 @@ func (model *Model) vertexByIndex(index int) (*Vertex, error) {
 
 // Adds a vertex to the model based on its three coordinates.
 func (model *Model) AppendVertex(x, y, z float64) {
-	model.vertices = append(model.vertices, newVertex(x, y, z))
+	model.vertices = append(model.vertices, NewVertex(x, y, z))
 }
 
 // Returns the vertex of the model by index and an error if the index is specified incorrectly.
@@ -107,18 +123,44 @@ func (model *Model) AppendFace(v1, v2, v3 int) error {
 	if vertex3, err = model.vertexByIndex(v3); err != nil {
 		return err
 	}
-	model.faces = append(model.faces, newFace(vertex1, vertex2, vertex3))
+	model.faces = append(model.faces, NewFace(vertex1, vertex2, vertex3))
 	return nil
 }
 
 // Returns the vertex of the model by index.
-func (model *Model) GetFace(index int) Face {
-	return *model.faces[index]
+func (model *Model) GetFace(index int) *Face {
+	return model.faces[index]
 }
 
 // Returns the number of model faces.
 func (model *Model) FacesCount() int {
 	return len(model.faces)
+}
+
+// Performs the transformation of each vertex of the model specified by the transformation function.
+func (model *Model) Transform(transformation func(x, y, z float64) (float64, float64, float64)) {
+	var (
+		v       *Vertex
+		x, y, z float64
+	)
+	for i := 0; i < len(model.vertices); i++ {
+		v = model.vertices[i]
+		x, y, z = transformation(v.X, v.Y, v.Z)
+		v.X = x
+		v.Y = y
+		v.Z = z
+	}
+}
+
+// Draws the sides of all the faces of the model.
+func (model *Model) WireRender(img *pngimage.Image, rgb pngimage.RGB) {
+	var face *Face
+	for i := 0; i < len(model.faces); i++ {
+		face = model.faces[i]
+		img.Line(int(face.vertex1.X), int(face.vertex1.Y), int(face.vertex2.X), int(face.vertex2.Y), rgb)
+		img.Line(int(face.vertex1.X), int(face.vertex1.Y), int(face.vertex3.X), int(face.vertex3.Y), rgb)
+		img.Line(int(face.vertex2.X), int(face.vertex2.Y), int(face.vertex3.X), int(face.vertex3.Y), rgb)
+	}
 }
 
 // Creates a new three-dimensional model with zero vertices and reserves memory space for 10 vertices and 10 faces.

@@ -42,7 +42,7 @@ func DrawVertices(transform func(v *types.Vertex) image.Point, name string) erro
 		}
 		elementType, element = p.Next()
 	}
-	err = img.Save(fmt.Sprintf("testdata/pictures/%s_rabbit_vertices.png", name))
+	err = img.Save(fmt.Sprintf("testdata/pictures/vertices/%s_rabbit_vertices.png", name))
 	if err != nil {
 		return err
 	}
