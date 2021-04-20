@@ -1,8 +1,6 @@
 package model
 
 import (
-	"computer_graphics/mathutils"
-	"computer_graphics/pngimage"
 	"errors"
 	"fmt"
 	"math"
@@ -40,21 +38,6 @@ func (f *Face) Vertex3() Vertex {
 	return *f.vertex3
 }
 
-// Returns the barycentric coordinates of a point in the image relative to the vertices of the face.
-func (f *Face) BarycentricCoordinates(x, y int) (float64, float64, float64) {
-	var (
-		v1 = f.vertex1
-		v2 = f.vertex2
-		v3 = f.vertex3
-		xx = float64(x)
-		yy = float64(y)
-		l1 = ((v2.X-v3.X)*(yy-v3.Y) - (v2.Y-v3.Y)*(xx-v3.X)) / ((v2.X-v3.X)*(v1.Y-v3.Y) - (v2.Y-v3.Y)*(v1.X-v3.X))
-		l2 = ((v3.X-v1.X)*(yy-v1.Y) - (v3.Y-v1.Y)*(xx-v1.X)) / ((v3.X-v1.X)*(v2.Y-v1.Y) - (v3.Y-v1.Y)*(v2.X-v1.X))
-		l3 = ((v1.X-v2.X)*(yy-v2.Y) - (v1.Y-v2.Y)*(xx-v2.X)) / ((v1.X-v2.X)*(v3.Y-v2.Y) - (v1.Y-v2.Y)*(v3.X-v2.X))
-	)
-	return l1, l2, l3
-}
-
 // Calculates the normal to the surface of the triangle.
 func (f *Face) Normal() (float64, float64, float64) {
 	var (
@@ -62,41 +45,14 @@ func (f *Face) Normal() (float64, float64, float64) {
 		v2 = f.vertex2
 		v3 = f.vertex3
 		x  = (v2.Y-v1.Y)*(v2.Z-v3.Z) - (v2.Z-v1.Z)*(v2.Y-v3.Y)
-		y  = (v2.X-v1.X)*(v2.Z-v3.Z) - (v2.Z-v1.Z)*(v2.X-v3.X)
+		y  = (v2.Z-v1.Z)*(v2.X-v3.X) - (v2.X-v1.X)*(v2.Z-v3.Z)
 		z  = (v2.X-v1.X)*(v2.Y-v3.Y) - (v2.Y-v1.Y)*(v2.X-v3.X)
 	)
 	return x, y, z
 }
 
-// Draws a triangle on the specified image with the specified color.
-func (f *Face) draw(img *pngimage.Image, rgb pngimage.RGB, buffer [][]float64) {
-	var (
-		v1         = f.vertex1
-		v2         = f.vertex2
-		v3         = f.vertex3
-		xMax       = math.Min(float64(img.Width()), mathutils.Max(v1.X, v2.X, v3.X))
-		xMin       = math.Max(0, mathutils.Min(v1.X, v2.X, v3.X))
-		yMax       = math.Min(float64(img.Height()), mathutils.Max(v1.Y, v2.Y, v3.Y))
-		yMin       = math.Max(0, mathutils.Min(v1.Y, v2.Y, v3.Y))
-		l1, l2, l3 float64
-		z          float64
-	)
-	for i := int(math.Ceil(xMin)); float64(i) < xMax; i++ {
-		for j := int(math.Ceil(yMin)); float64(j) < yMax; j++ {
-			l1, l2, l3 = f.BarycentricCoordinates(i, j)
-			if l1 > 0 && l2 > 0 && l3 > 0 {
-				z = l1*v1.Z + l2*v2.Z + l3*v3.Z
-				if z < buffer[i][j] {
-					img.Set(i, j, rgb)
-					buffer[i][j] = z
-				}
-			}
-		}
-	}
-}
-
 // Creates a Face based on its three vertices.
-func NewFace(vertex1, vertex2, vertex3 *Vertex) *Face {
+func newFace(vertex1, vertex2, vertex3 *Vertex) *Face {
 	return &Face{
 		vertex1: vertex1,
 		vertex2: vertex2,
@@ -165,7 +121,7 @@ func (model *Model) AppendFace(v1, v2, v3 int) error {
 	if vertex3, err = model.vertexByIndex(v3); err != nil {
 		return err
 	}
-	model.faces = append(model.faces, NewFace(vertex1, vertex2, vertex3))
+	model.faces = append(model.faces, newFace(vertex1, vertex2, vertex3))
 	return nil
 }
 
@@ -194,47 +150,28 @@ func (model *Model) Transform(transformation func(x, y, z float64) (float64, flo
 	}
 }
 
-// Draws the sides of all the faces of the model.
-func (model *Model) WireRender(img *pngimage.Image, rgb pngimage.RGB) {
-	var face *Face
-	for i := 0; i < len(model.faces); i++ {
-		face = model.faces[i]
-		img.Line(int(face.vertex1.X), int(face.vertex1.Y), int(face.vertex2.X), int(face.vertex2.Y), rgb)
-		img.Line(int(face.vertex1.X), int(face.vertex1.Y), int(face.vertex3.X), int(face.vertex3.Y), rgb)
-		img.Line(int(face.vertex2.X), int(face.vertex2.Y), int(face.vertex3.X), int(face.vertex3.Y), rgb)
-	}
+// Shifts the model along all coordinates by the specified distance.
+func (model *Model) Shift(xShift, yShift, zShift float64) {
+	model.Transform(func(x, y, z float64) (float64, float64, float64) {
+		return x + xShift, y + yShift, z + zShift
+	})
 }
 
-// Draws all faces from the model, darkening the faces that are rotated by a larger angle.
-func (model *Model) BasicLighting(img *pngimage.Image, rgb pngimage.RGB) {
+// Rotates the model around each axis by the specified angle.
+func (model *Model) Rotate(xAngle, yAngle, zAngle float64) {
 	var (
-		face    *Face
-		x, y, z float64
-		cos     float64
-		buffer  = make([][]float64, img.Width())
+		sinX, cosX = math.Sincos(xAngle)
+		sinY, cosY = math.Sincos(yAngle)
+		sinZ, cosZ = math.Sincos(zAngle)
 	)
-	for i := 0; i < img.Width(); i++ {
-		buffer[i] = make([]float64, img.Height())
-		for j := 0; j < img.Height(); j++ {
-			buffer[i][j] = math.Inf(+1)
-		}
-	}
-	for i := 0; i < len(model.faces); i++ {
-		face = model.faces[i]
-		x, y, z = face.Normal()
-		cos = z / math.Sqrt(x*x+y*y+z*z)
-		if cos < 0 {
-			face.draw(
-				img,
-				pngimage.RGB{
-					R: uint8(-float64(rgb.R) * cos),
-					G: uint8(-float64(rgb.G) * cos),
-					B: uint8(-float64(rgb.B) * cos),
-				},
-				buffer,
-			)
-		}
-	}
+	model.Transform(func(x, y, z float64) (float64, float64, float64) {
+		var (
+			newX = cosY*cosZ*x + cosY*sinZ*y + sinY*z
+			newY = -(sinX*sinY*cosZ+cosY*sinZ)*x + (-sinX*sinY*sinZ+cosX*cosZ)*y + sinX*cosY*z
+			newZ = (-cosX*sinY*cosZ+sinX*sinZ)*x - (cosX*sinY*sinZ+sinX*cosY)*y + cosX*cosY*z
+		)
+		return newX, newY, newZ
+	})
 }
 
 // Creates a new three-dimensional model with zero vertices and reserves memory space for 10 vertices and 10 faces.
