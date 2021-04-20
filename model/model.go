@@ -45,7 +45,7 @@ func (f *Face) Normal() (float64, float64, float64) {
 		v2 = f.vertex2
 		v3 = f.vertex3
 		x  = (v2.Y-v1.Y)*(v2.Z-v3.Z) - (v2.Z-v1.Z)*(v2.Y-v3.Y)
-		y  = (v2.X-v1.X)*(v2.Z-v3.Z) - (v2.Z-v1.Z)*(v2.X-v3.X)
+		y  = (v2.Z-v1.Z)*(v2.X-v3.X) - (v2.X-v1.X)*(v2.Z-v3.Z)
 		z  = (v2.X-v1.X)*(v2.Y-v3.Y) - (v2.Y-v1.Y)*(v2.X-v3.X)
 	)
 	return x, y, z
@@ -167,7 +167,7 @@ func (model *Model) Rotate(xAngle, yAngle, zAngle float64) {
 	model.Transform(func(x, y, z float64) (float64, float64, float64) {
 		var (
 			newX = cosY*cosZ*x + cosY*sinZ*y + sinY*z
-			newY = -sinX*sinY*cosZ*x + (-sinX*sinY*sinZ+cosX*cosZ)*y + sinX*cosY*z
+			newY = -(sinX*sinY*cosZ+cosY*sinZ)*x + (-sinX*sinY*sinZ+cosX*cosZ)*y + sinX*cosY*z
 			newZ = (-cosX*sinY*cosZ+sinX*sinZ)*x - (cosX*sinY*sinZ+sinX*cosY)*y + cosX*cosY*z
 		)
 		return newX, newY, newZ

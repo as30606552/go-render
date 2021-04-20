@@ -11,28 +11,28 @@ import (
 )
 
 // Converts the coordinates of a vertex to the coordinates of a pixel in the image.
-func projectiveTransformation(v *model.Vertex, img *pngimage.Image) (float64, float64) {
+func projectiveTransformation(v *model.Vertex, img *pngimage.Image, scale float64) (float64, float64) {
 	var (
 		width   = float64(img.Width())
 		height  = float64(img.Height())
-		scale   = math.Max(width, height)
 		xCenter = width / 2
 		yCenter = height / 2
 	)
+	scale = math.Max(width, height) * scale
 	return scale*v.X/v.Z + xCenter, scale*v.Y/v.Z + yCenter
 }
 
 // Draws a triangle on the image with the specified color.
-func renderTriangle(face *model.Face, buffer [][]float64, img *pngimage.Image, rgb pngimage.RGB) {
+func renderTriangle(face *model.Face, buffer [][]float64, img *pngimage.Image, rgb pngimage.RGB, scale float64) {
 	var (
 		// Vertices.
 		v1 = face.Vertex1()
 		v2 = face.Vertex2()
 		v3 = face.Vertex3()
 		// Coordinates of the vertices in the image.
-		x1, y1 = projectiveTransformation(&v1, img)
-		x2, y2 = projectiveTransformation(&v2, img)
-		x3, y3 = projectiveTransformation(&v3, img)
+		x1, y1 = projectiveTransformation(&v1, img, scale)
+		x2, y2 = projectiveTransformation(&v2, img, scale)
+		x3, y3 = projectiveTransformation(&v3, img, scale)
 		// The boundaries of the rectangle inside which the face is located.
 		xMax = math.Min(float64(img.Width()), mathutils.Max(x1, x2, x3))
 		xMin = math.Max(0, mathutils.Min(x1, x2, x3))
@@ -54,7 +54,7 @@ func renderTriangle(face *model.Face, buffer [][]float64, img *pngimage.Image, r
 			if l1 > 0 && l2 > 0 && l3 > 0 {
 				z = l1*v1.Z + l2*v2.Z + l3*v3.Z
 				if z < buffer[i][j] {
-					img.Set(i, j, rgb)
+					img.Set(i, img.Height()-j, rgb)
 					buffer[i][j] = z
 				}
 			}
@@ -63,7 +63,7 @@ func renderTriangle(face *model.Face, buffer [][]float64, img *pngimage.Image, r
 }
 
 // Draws a model on an image using a projective coordinate transformation.
-func RenderWithProjectiveTransformation(m *model.Model, img *pngimage.Image) {
+func RenderWithProjectiveTransformation(m *model.Model, img *pngimage.Image, scale float64) {
 	var (
 		face    *model.Face
 		x, y, z float64
@@ -81,7 +81,7 @@ func RenderWithProjectiveTransformation(m *model.Model, img *pngimage.Image) {
 	for i := 0; i < m.FacesCount(); i++ {
 		face = m.GetFace(i)
 		x, y, z = face.Normal()
-		cos = z / math.Sqrt(x*x+y*y+z*z)
+		cos = -z / math.Sqrt(x*x+y*y+z*z)
 		if cos < 0 {
 			renderTriangle(
 				face,
@@ -92,6 +92,7 @@ func RenderWithProjectiveTransformation(m *model.Model, img *pngimage.Image) {
 					G: uint8(-cos * 255),
 					B: uint8(-cos * 255),
 				},
+				scale,
 			)
 		}
 	}
@@ -110,11 +111,9 @@ func ExampleRenderWithProjectiveTransformation_rabbit() {
 		m   = ipt.Import(input)
 		img = pngimage.BlackImage(2000, 2000)
 	)
-	// Rotate the model to math.Pi around the X-axis and on math.Pi around the Y-axis.
-	m.Rotate(math.Pi, math.Pi, 0)
-	// The model shifts by 0.005 along the X-axis, 0.045 along the Y-axis, and 0.2 along the Z-axis.
-	m.Shift(0.005, 0.045, 0.2)
-	RenderWithProjectiveTransformation(m, img)
+	m.Rotate(0, math.Pi*3/2, 0)
+	m.Shift(0.005, -0.045, 15)
+	RenderWithProjectiveTransformation(m, img, 100)
 	if err := img.Save("testdata/pictures/rabbit_transformations.png"); err != nil {
 		fmt.Println(err)
 	} else {
