@@ -239,6 +239,15 @@ func (scanner *scanner) Next() (TokenType, string) {
 	)
 	for scanner.has() {
 		symbol = scanner.peek()
+		// Skipping the '\r' character to handle line ends on Windows
+		if symbol == '\r' {
+			if scanner.has() {
+				scanner.step()
+				symbol = scanner.peek()
+			} else {
+				symbol = '\n'
+			}
+		}
 		tokenType = tokenTypeMap[state]
 		state = matrix[getSymbolType(symbol)][state] // The next state is contained in the matrix.
 		// The transition to the start state means the end of the token.
