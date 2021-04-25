@@ -30,6 +30,7 @@ func (i *Importer) Import(in io.Reader) *model.Model {
 	// Reading the model.
 	var m = model.NewModel()
 	i.importVertices(p, m)
+	i.importNormals(p, m)
 	i.importFaces(p, m)
 	return m
 }
@@ -79,12 +80,42 @@ func (i *Importer) importVertices(p parser.Parser, m *model.Model) {
 		switch elementType {
 		case parser.Vertex:
 			i.importVertex(line, element.(*types.Vertex), m)
+		case parser.VertexNormal:
+			i.importNormal(line, element.(*types.Normal), m)
 		case parser.Face, parser.EndOfFile:
 			return
 		default:
 			i.error(line, fmt.Sprintf("An impossible element was read: %s", elementType))
 			return
 		}
+	}
+}
+
+// Imports a single vertex normal of the model.
+func (i *Importer) importNormal(line int, v *types.Normal, m *model.Model) {
+	m.AppendNormal(v.X, v.Y, v.Z)
+}
+
+// Imports all model vertex normals.
+func (i *Importer) importNormals(p parser.Parser, m *model.Model) {
+	var (
+		elementType parser.ElementType
+		element     interface{}
+		line        int
+	)
+	for {
+		elementType, element = p.Next()
+		line = p.Line()
+		switch elementType {
+		case parser.VertexNormal:
+			i.importNormal(line, element.(*types.Normal), m)
+		case parser.Face, parser.EndOfFile:
+			return
+		default:
+			i.error(line, fmt.Sprintf("An impossible element was read: %s", elementType))
+			return
+		}
+
 	}
 }
 
@@ -96,10 +127,7 @@ func (i *Importer) importFace(line int, f *types.Face, m *model.Model) {
 	if f.Vertices[0].Texture != 0 {
 		i.warning(line, "vertex textures are not supported")
 	}
-	if f.Vertices[0].Normal != 0 {
-		i.warning(line, "vertex normals are not supported")
-	}
-	var err = m.AppendFace(f.Vertices[0].Index, f.Vertices[1].Index, f.Vertices[2].Index)
+	var err = m.AppendFace(f.Vertices[0].Index, f.Vertices[1].Index, f.Vertices[2].Index, f.Vertices[0].Normal, f.Vertices[1].Normal, f.Vertices[2].Normal)
 	if err != nil {
 		i.error(line, err.Error())
 	}
@@ -120,6 +148,8 @@ func (i *Importer) importFaces(p parser.Parser, m *model.Model) {
 			i.importFace(line, element.(*types.Face), m)
 		case parser.Vertex:
 			i.error(line, "incorrect order of elements (vertices must be defined before faces), the vertex will be skipped")
+		case parser.VertexNormal:
+			i.error(line, "incorrect order of elements (normal must be defined before faces), the vertex will be skipped")
 		case parser.EndOfFile:
 			return
 		default:

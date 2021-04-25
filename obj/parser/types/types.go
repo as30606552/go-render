@@ -21,6 +21,18 @@ func NewVertex() *Vertex {
 	return &Vertex{}
 }
 
+// Specifies a geometric vertex normal.
+type Normal struct {
+	X float64 `name:"X coordinate"`                     // X coordinate of the vertex.
+	Y float64 `name:"Y coordinate"`                     // Y coordinate of the vertex.
+	Z float64 `name:"Z coordinate"`                     // Z coordinate of the vertex.
+}
+
+// Creates a new normal.
+func NewNormal() *Normal {
+	return &Normal{}
+}
+
 // Specifies a face element.
 type Face struct {
 	// Contains information about all vertexes of the face.
