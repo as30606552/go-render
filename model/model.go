@@ -17,10 +17,37 @@ func NewVertex(x, y, z float64) *Vertex {
 	return &Vertex{X: x, Y: y, Z: z}
 }
 
+// Describes the Normal of the vertex in 3D space.
+// Contains three coordinates: X, Y, Z.
+type Normal struct {
+	X, Y, Z float64
+}
+
+// Creates a vertex normal based on its three coordinates.
+func NewNormal(x, y, z float64) *Normal {
+	return &Normal{x,y, z}
+}
+
 // Describes a triangle in three-dimensional space.
-// Contains three vertices of the triangle.
+// Contains three vertices of the triangle and three vertex normal.
 type Face struct {
 	vertex1, vertex2, vertex3 *Vertex
+	normal1, normal2, normal3 *Normal
+}
+
+// Returns the first normal of the vertex.
+func (f *Face) Normal1() Normal  {
+	return *f.normal1
+}
+
+// Returns the second normal of the vertex.
+func (f *Face) Normal2() Normal  {
+	return *f.normal2
+}
+
+// Returns the third normal of the vertex.
+func (f *Face) Normal3() Normal  {
+	return *f.normal3
 }
 
 // Returns the first vertex of the triangle.
@@ -39,7 +66,7 @@ func (f *Face) Vertex3() Vertex {
 }
 
 // Calculates the normal to the surface of the triangle.
-func (f *Face) Normal() (float64, float64, float64) {
+func (f *Face) CalculateNormal() (float64, float64, float64){
 	var (
 		v1 = f.vertex1
 		v2 = f.vertex2
@@ -51,12 +78,15 @@ func (f *Face) Normal() (float64, float64, float64) {
 	return x, y, z
 }
 
-// Creates a Face based on its three vertices.
-func newFace(vertex1, vertex2, vertex3 *Vertex) *Face {
+// Creates a Face based on its three vertices and three normal.
+func newFace(vertex1, vertex2, vertex3 *Vertex, normal1, normal2, normal3 *Normal) *Face {
 	return &Face{
 		vertex1: vertex1,
 		vertex2: vertex2,
 		vertex3: vertex3,
+		normal1:  normal1,
+		normal2:  normal2,
+		normal3:  normal3,
 	}
 }
 
@@ -64,6 +94,7 @@ func newFace(vertex1, vertex2, vertex3 *Vertex) *Face {
 type Model struct {
 	vertices []*Vertex // A list of all the vertices of the model.
 	faces    []*Face   // A list of all the faces of the model.
+	normals  []*Normal // A list of all the normals of the model.
 }
 
 // Returns a pointer to a vertex by its index and an error if the index is specified incorrectly.
@@ -87,9 +118,35 @@ func (model *Model) vertexByIndex(index int) (*Vertex, error) {
 	}
 }
 
+// Returns a pointer to a normal by its index and an error if the index is specified incorrectly.
+// Supports negative indexing, the index of the first normal is 1.
+func (model *Model) normalByIndex(index int) (*Normal, error) {
+	var normalsCount = len(model.normals)
+	if index > 0 {
+		if index <= normalsCount {
+			return model.normals[index-1], nil
+		} else {
+			return nil, fmt.Errorf("unresolved normal index: %d", index)
+		}
+	} else if index < 0 {
+		if -index <= normalsCount {
+			return model.normals[normalsCount+index], nil
+		} else {
+			return nil, fmt.Errorf("unresolved normal index: %d", index)
+		}
+	} else {
+		return nil, errors.New("normal index cannot be zero")
+	}
+}
+
 // Adds a vertex to the model based on its three coordinates.
 func (model *Model) AppendVertex(x, y, z float64) {
 	model.vertices = append(model.vertices, NewVertex(x, y, z))
+}
+
+// Adds a normal to the model based on its three coordinates.
+func (model *Model) AppendNormal(x, y, z float64) {
+	model.normals = append(model.normals, NewNormal(x, y, z))
 }
 
 // Returns the vertex of the model by index and an error if the index is specified incorrectly.
@@ -104,13 +161,16 @@ func (model *Model) VerticesCount() int {
 	return len(model.vertices)
 }
 
-// Adds a face to the model based on its three vertices.
-func (model *Model) AppendFace(v1, v2, v3 int) error {
+// Adds a face to the model based on its three vertices and three vertex normal.
+func (model *Model) AppendFace(v1, v2, v3 int, n1, n2, n3 int ) error {
 	var (
 		err     error
 		vertex1 *Vertex
 		vertex2 *Vertex
 		vertex3 *Vertex
+		normal1 *Normal
+		normal2 *Normal
+		normal3 *Normal
 	)
 	if vertex1, err = model.vertexByIndex(v1); err != nil {
 		return err
@@ -121,9 +181,20 @@ func (model *Model) AppendFace(v1, v2, v3 int) error {
 	if vertex3, err = model.vertexByIndex(v3); err != nil {
 		return err
 	}
-	model.faces = append(model.faces, newFace(vertex1, vertex2, vertex3))
+	if normal1, err = model.normalByIndex(n1); err != nil {
+		return err
+	}
+	if normal2, err = model.normalByIndex(n2); err != nil {
+		return err
+	}
+	if normal3, err = model.normalByIndex(n3); err != nil {
+		return err
+	}
+
+	model.faces = append(model.faces, newFace(vertex1, vertex2, vertex3, normal1, normal2, normal3))
 	return nil
 }
+
 
 // Returns the vertex of the model by index.
 func (model *Model) GetFace(index int) *Face {
