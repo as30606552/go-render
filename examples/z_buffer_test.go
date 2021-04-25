@@ -55,7 +55,7 @@ func BasicLighting(m *model.Model, img *pngimage.Image, rgb pngimage.RGB) {
 	}
 	for i := 0; i < m.FacesCount(); i++ {
 		face = m.GetFace(i)
-		x, y, z = face.Normal()
+		x, y, z = face.CalculateNormal()
 		cos = z / math.Sqrt(x*x+y*y+z*z)
 		if cos < 0 {
 			v1 = face.Vertex1()
